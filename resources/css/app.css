@@ -1,0 +1,92 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+
+@theme {
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+        'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+@layer base {
+    a[href],
+    button:not(:disabled),
+    [role='button']:not([aria-disabled='true']),
+    summary,
+    select:not(:disabled),
+    input[type='checkbox']:not(:disabled),
+    input[type='radio']:not(:disabled),
+    input[type='file']:not(:disabled),
+    label[for],
+    [data-modal-open],
+    [data-modal-close],
+    [data-dropdown-toggle] {
+        cursor: pointer;
+    }
+
+    button:disabled,
+    select:disabled,
+    input:disabled,
+    [aria-disabled='true'] {
+        cursor: not-allowed;
+    }
+}
+
+@layer components {
+    .app-page-header {
+        position: sticky;
+        top: 0;
+        z-index: 30;
+        width: 100%;
+        border-bottom: 1px solid rgb(226 232 240 / 0.8);
+        background-color: rgb(255 255 255 / 0.9);
+        box-shadow: 0 1px 3px rgb(15 23 42 / 0.06);
+        backdrop-filter: blur(12px);
+    }
+
+    .compact-data-table tbody td {
+        padding-top: 0.375rem !important;
+        padding-bottom: 0.375rem !important;
+    }
+
+    .compact-data-table th,
+    .compact-data-table td {
+        text-align: center;
+    }
+
+    .compact-data-table .patient-name-cell {
+        text-align: left;
+    }
+
+    .setup-page table th:last-child,
+    .setup-page table td:last-child {
+        padding-right: 1.25rem;
+        padding-left: 1.25rem;
+        text-align: center;
+    }
+
+    .setup-page table td:last-child > .flex {
+        justify-content: center;
+    }
+
+    .setup-page main section:first-of-type table th:nth-child(n + 4),
+    .setup-page main section:first-of-type table td:nth-child(n + 4) {
+        text-align: center;
+    }
+
+    .setup-page main section:first-of-type table td:nth-child(7) > .flex {
+        width: 100%;
+        margin-right: auto;
+        margin-left: auto;
+        justify-content: center !important;
+    }
+
+    .setup-page main section:first-of-type table th:nth-child(7),
+    .setup-page main section:first-of-type table td:nth-child(7) {
+        width: 140px;
+        min-width: 140px;
+        padding-right: 0 !important;
+        padding-left: 0 !important;
+        text-align: center !important;
+    }
+}
