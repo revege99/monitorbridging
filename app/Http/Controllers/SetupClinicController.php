@@ -127,6 +127,9 @@ class SetupClinicController extends Controller
         abort_unless($request->user()->isSuperadmin(), 403);
         $clinicId = $request->validate(['clinic_id' => ['required', 'exists:central.clinics,id']])['clinic_id'];
         $request->session()->put('active_clinic_id', $clinicId);
+        if ($request->expectsJson()) {
+            return response()->json(['success' => true]);
+        }
         return back();
     }
 }

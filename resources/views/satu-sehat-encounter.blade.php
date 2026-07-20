@@ -156,6 +156,7 @@
                                 </div>
                             </section>
                         </div>
+                        @include('partials.sidebar-secondary-groups')
                         @include('partials.setup-clinic-menu')
                     </nav>
                 </div>
@@ -674,7 +675,7 @@
                     button.setAttribute('aria-expanded', open ? 'true' : 'false');
                 };
 
-                setOpen(true);
+                setOpen(false);
 
                 button.addEventListener('click', () => {
                     const isOpen = button.getAttribute('aria-expanded') === 'true';

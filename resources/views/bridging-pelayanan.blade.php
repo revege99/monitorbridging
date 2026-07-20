@@ -346,11 +346,11 @@
                 <div class="app-page-header">
                     <div class="flex items-center justify-between px-3 py-2.5 lg:px-3">
                         <div>
-                            <h2 class="text-base font-semibold text-slate-900">{{ $isRujuk ? 'Bridging Rujuk' : 'Bridging Pasien' }}</h2>
+                            <h2 class="text-base font-semibold text-slate-900">{{ $isRujuk ? 'Bridging Rujuk' : 'Bridging Rajal' }}</h2>
                             <div class="mt-1 flex items-center gap-2 text-xs text-slate-500">
                                 <span class="text-cyan-600">Monitor BPJS</span>
                                 <span>&gt;</span>
-                                <span>{{ $isRujuk ? 'Bridging Rujuk' : 'Bridging Pasien' }}</span>
+                                <span>{{ $isRujuk ? 'Bridging Rujuk' : 'Bridging Rajal' }}</span>
                             </div>
                         </div>
                         @include('partials.clinic-selector')
@@ -361,7 +361,7 @@
                     <div class="mb-8 rounded-xl border border-slate-200 bg-white p-2 shadow-sm">
                         <div class="flex flex-wrap gap-2">
                             <a href="{{ url('/?' . http_build_query($rajalQuery)) }}" class="@if(! $isRujuk) bg-blue-600 text-white shadow-sm @else bg-slate-100 text-slate-600 hover:bg-slate-200 @endif inline-flex items-center rounded-2xl px-4 py-2 text-xs font-semibold transition">
-                                Bridging Pasien
+                                Bridging Rajal
                             </a>
                             <a href="{{ url('/?' . http_build_query($rujukQuery)) }}" class="@if($isRujuk) bg-blue-600 text-white shadow-sm @else bg-slate-100 text-slate-600 hover:bg-slate-200 @endif inline-flex items-center rounded-2xl px-4 py-2 text-xs font-semibold transition">
                                 Bridging Rujuk
@@ -381,7 +381,7 @@
                                     </svg>
                                 </div>
                                 <div>
-                                    <p class="text-xs text-slate-500">Total {{ $isRujuk ? 'Bridging Rujuk' : 'Bridging Pasien' }}</p>
+                                    <p class="text-xs text-slate-500">Total {{ $isRujuk ? 'Bridging Rujuk' : 'Bridging Rajal' }}</p>
                                     <p class="mt-2 text-2xl font-semibold text-slate-950">{{ $summary['total'] }}</p>
                                 </div>
                             </div>
@@ -581,7 +581,7 @@
                     button.setAttribute('aria-expanded', open ? 'true' : 'false');
                 };
 
-                setOpen(true);
+                setOpen(false);
 
                 button.addEventListener('click', () => {
                     const isOpen = button.getAttribute('aria-expanded') === 'true';

@@ -92,7 +92,15 @@ class BridgingPelayananController extends Controller
                 'pk.tglDaftar as pcare_kunjungan',
             ])
             ->where('rp.kd_pj', 'BPJ')
-            ->where('rp.stts', '!=', 'Batal');
+            ->where('rp.stts', '!=', 'Batal')
+            ->where(function ($query) {
+                $query->whereNotNull('pk.no_rawat')
+                    ->orWhereNotExists(function ($subQuery) {
+                        $subQuery->selectRaw('1')
+                            ->from('pcare_rujuk_subspesialis as prs')
+                            ->whereColumn('prs.no_rawat', 'rp.no_rawat');
+                    });
+            });
 
         if ($filters['start_date']) {
             $rows->whereDate('rp.tgl_registrasi', '>=', $filters['start_date']);

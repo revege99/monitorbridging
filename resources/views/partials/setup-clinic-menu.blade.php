@@ -1,7 +1,7 @@
 @if(auth()->user()?->isSuperadmin())
     <section class="mt-1">
         <div class="rounded-2xl px-0">
-            <button type="button" class="flex w-full cursor-pointer items-center gap-2 rounded-2xl px-0 py-1.5 text-left text-white" data-dropdown-toggle aria-expanded="{{ request()->routeIs('setup.*') ? 'true' : 'false' }}">
+            <button type="button" class="flex w-full cursor-pointer items-center gap-2 rounded-2xl px-0 py-1.5 text-left text-white" data-dropdown-toggle aria-expanded="false">
                 <span class="flex h-11 w-11 items-center justify-center text-slate-300">
                     <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="12" cy="12" r="3" />
@@ -14,7 +14,7 @@
                     <svg class="h-5 w-5 text-slate-400 transition duration-200" data-dropdown-icon viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6" /></svg>
                 </div>
             </button>
-            <div class="mt-1 space-y-1 pl-[7px] {{ request()->routeIs('setup.*') ? '' : 'hidden' }}" data-dropdown-panel>
+            <div class="mt-1 hidden space-y-1 pl-[7px]" data-dropdown-panel>
                 @foreach ([['clinics', 'Profil Klinik'], ['database', 'Konfigurasi DB'], ['users', 'Manajemen User']] as [$setupTab, $label])
                     <a href="{{ route('setup.index', ['tab' => $setupTab]) }}" class="flex items-center gap-3 rounded-xl px-2 py-2.5 text-sm {{ request('tab', 'clinics') === $setupTab && request()->routeIs('setup.*') ? 'bg-cyan-400/8 text-white ring-1 ring-cyan-400/10' : 'text-slate-300 hover:bg-white/5' }}">
                         <span class="h-1.5 w-1.5 rounded-full {{ request('tab', 'clinics') === $setupTab && request()->routeIs('setup.*') ? 'bg-cyan-300' : 'bg-slate-500' }}"></span>
