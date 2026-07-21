@@ -1,5 +1,9 @@
 (() => {
     const sidebar = document.querySelector('aside nav');
+    const script = document.currentScript || document.querySelector('script[src*="/js/sidebar-state.js"]');
+    const applicationBaseUrl = script?.src
+        ? new URL('../', script.src)
+        : new URL('./', window.location.href);
 
     if (!sidebar) {
         return;
@@ -7,7 +11,7 @@
 
     if (!sidebar.querySelector('[data-queue-display-link]')) {
         const displayLink = document.createElement('a');
-        displayLink.href = '/display/antrean';
+        displayLink.href = new URL('display/antrean', applicationBaseUrl).href;
         displayLink.target = '_blank';
         displayLink.rel = 'noopener';
         displayLink.dataset.queueDisplayLink = '';
@@ -35,7 +39,7 @@
 
     if (!sidebar.querySelector('[data-kiosk-link]')) {
         const kioskLink = document.createElement('a');
-        kioskLink.href = '/anjungan';
+        kioskLink.href = new URL('anjungan', applicationBaseUrl).href;
         kioskLink.target = '_blank';
         kioskLink.rel = 'noopener';
         kioskLink.dataset.kioskLink = '';
