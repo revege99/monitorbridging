@@ -11,9 +11,10 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
-        $credentials = $request->validate(['email' => ['required', 'email'], 'password' => ['required']]);
-        if (!Auth::attempt([...$credentials, 'is_active' => true], $request->boolean('remember'))) {
-            return back()->withErrors(['email' => 'Email atau password tidak sesuai.'])->onlyInput('email');
+        $data = $request->validate(['login' => ['required', 'string'], 'password' => ['required']]);
+        $field = filter_var($data['login'], FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
+        if (!Auth::attempt([$field => $data['login'], 'password' => $data['password'], 'is_active' => true], $request->boolean('remember'))) {
+            return back()->withErrors(['login' => 'Username/email atau password tidak sesuai.'])->onlyInput('login');
         }
         $request->session()->regenerate();
         return redirect()->intended('/');
@@ -25,5 +26,20 @@ class AuthController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
         return redirect()->route('login');
+    }
+
+    public function updatePassword(Request $request)
+    {
+        $data = $request->validate([
+            'current_password' => ['required', 'current_password'],
+            'password' => ['required', 'confirmed'],
+        ], [
+            'current_password.current_password' => 'Password lama tidak sesuai.',
+            'password.confirmed' => 'Konfirmasi password baru tidak sesuai.',
+        ]);
+
+        $request->user()->update(['password' => $data['password']]);
+
+        return response()->json(['message' => 'Password berhasil diubah.']);
     }
 }

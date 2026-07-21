@@ -2,6 +2,10 @@
 
 return [
 
+    'khanza' => [
+        'integration_token' => env('KHANZA_INTEGRATION_TOKEN'),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Third Party Services

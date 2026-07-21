@@ -16,7 +16,10 @@
         ['label' => 'Laporan', 'color' => 'text-emerald-300', 'items' => array_map(fn($item) => [$item, '#'], ['Rekap Harian','Rekap Bulanan','Rekap Antrean BPJS','Rekap Bridging Pelayanan','Rekap Kendala Bridging','Rekap Waktu Pelayanan','Audit Bridging','Export Data'])],
         ['label' => 'Audit Log', 'color' => 'text-amber-300', 'items' => array_map(fn($item) => [$item, '#'], ['Log Antrean BPJS','Log Bridging Pelayanan','Log Request API','Log Response API','Riwayat Retry Bridging','Aktivitas Pengguna'])],
         ['label' => 'Master Data', 'color' => 'text-violet-300', 'items' => array_map(fn($item) => [$item, '#'], ['Mapping Dokter BPJS','Mapping Poli BPJS','Mapping Diagnosa (ICD-10)','Mapping Tindakan','Mapping Status Pulang','Jadwal Dokter'])],
-        ['label' => 'Pengaturan', 'color' => 'text-slate-300', 'items' => array_map(fn($item) => [$item, '#'], ['Target SLA Pelayanan','Konfigurasi Bridging','Retry Bridging Otomatis','Notifikasi Monitoring','Hak Akses Pengguna','Parameter Sistem'])],
+        ['label' => 'Konfigurasi Bridging', 'color' => 'text-slate-300', 'items' => [
+            ['BPJS', route('configurations.bpjs.index')], ['Satu Sehat', route('configurations.satu-sehat.index')],
+            ['Base URL BPJS', route('configurations.base-url.index')], ['Base URL Satu Sehat', route('configurations.satu-sehat-base-url.index')],
+        ]],
     ];
 @endphp
 @foreach($sidebarGroups as $group)

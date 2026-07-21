@@ -26,12 +26,14 @@ class ConfigureClinicDatabase
         view()->share('availableClinics', $user->isSuperadmin() ? Clinic::where('is_active', true)->orderBy('name')->get() : collect([$user->clinic])->filter());
         view()->share('activeClinic', $clinic);
 
-        if (!$clinic?->database && !$request->routeIs('setup.*', 'logout', 'clinics.select')) {
+        $centralOnlyRoute = $request->routeIs('setup.*', 'logout', 'clinics.select', 'account.password.update');
+
+        if (!$clinic?->database && !$centralOnlyRoute) {
             if ($user->isSuperadmin()) return redirect()->route('setup.index', ['tab' => 'database']);
             abort(503, 'Database klinik belum dikonfigurasi. Hubungi superadmin.');
         }
 
-        if ($clinic?->database) {
+        if ($clinic?->database && !$centralOnlyRoute) {
             $database = $clinic->database;
             config(['database.connections.clinic' => [
                 'driver' => $database->driver,

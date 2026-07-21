@@ -21,6 +21,8 @@
                         <span>{{ $label }}</span>
                     </a>
                 @endforeach
+                <a href="{{ route('installation.index') }}" class="flex items-center gap-3 rounded-xl px-2 py-2.5 text-sm {{ request()->routeIs('installation.*') ? 'bg-cyan-400/8 text-white ring-1 ring-cyan-400/10' : 'text-slate-300 hover:bg-white/5' }}"><span class="h-1.5 w-1.5 rounded-full bg-slate-500"></span><span>Aktivasi Instalasi</span></a>
+                <a href="{{ route('service-monitor.index') }}" class="flex items-center gap-3 rounded-xl px-2 py-2.5 text-sm {{ request()->routeIs('service-monitor.*') ? 'bg-cyan-400/8 text-white ring-1 ring-cyan-400/10' : 'text-slate-300 hover:bg-white/5' }}"><span class="h-1.5 w-1.5 rounded-full bg-slate-500"></span><span>Monitor Service</span></a>
             </div>
         </div>
     </section>

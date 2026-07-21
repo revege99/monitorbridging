@@ -214,7 +214,6 @@ class BridgingPelayananController extends Controller
                     ->where('dp.prioritas', '=', 1)
                     ->where('dp.status', '=', 'Ralan');
             })
-            ->leftJoin('penyakit as p', 'p.kd_penyakit', '=', 'dp.kd_penyakit')
             ->select([
                 'rp.no_rawat',
                 'rp.no_rkm_medis',
@@ -232,7 +231,6 @@ class BridgingPelayananController extends Controller
                 'prs.tglEstRujuk',
                 'dp.kd_penyakit',
                 'dp.nonSpesialis',
-                'p.nm_penyakit',
             ])
             ->where('rp.kd_pj', 'BPJ')
             ->where('rp.stts', '!=', 'Batal');
@@ -253,7 +251,6 @@ class BridgingPelayananController extends Controller
                     ->orWhere('rp.no_rkm_medis', 'like', '%' . $search . '%')
                     ->orWhere('ps.nm_pasien', 'like', '%' . $search . '%')
                     ->orWhere('dp.kd_penyakit', 'like', '%' . $search . '%')
-                    ->orWhere('p.nm_penyakit', 'like', '%' . $search . '%')
                     ->orWhere('dp.nonSpesialis', 'like', '%' . $search . '%');
             });
         }
@@ -275,7 +272,7 @@ class BridgingPelayananController extends Controller
                         'tgl_estimasi_rujuk' => $row->tglEstRujuk,
                         'subspesialis' => $row->nmSubSpesialis ?: '-',
                         'ppk_rujuk' => $row->nmPPK ?: '-',
-                        'diagnosa' => $row->nm_penyakit ?: $row->diag_rujuk ?: '-',
+                        'diagnosa' => $row->nonSpesialis ?: '-',
                         'kode_diagnosa' => $row->kd_penyakit ?: '-',
                         'non_spesialis' => $row->nonSpesialis ?: '-',
                         'tacc' => $row->nmTACC ?: '-',
@@ -374,11 +371,14 @@ class BridgingPelayananController extends Controller
     private function buildSummary(Collection $rows, string $jenis): array
     {
         if ($jenis === 'rujuk') {
+            $nonSpesialis = $rows->filter(function ($row) {
+                return ! in_array(strtolower(trim((string) $row['non_spesialis'])), ['', '-', 'false', '0', 'tidak'], true);
+            })->count();
+
             return [
                 'total' => $rows->count(),
-                'non_spesialis' => $rows->filter(fn ($row) => $row['non_spesialis'] !== '-' && $row['non_spesialis'] !== 'false')->count(),
-                'dengan_tacc' => $rows->filter(fn ($row) => $row['tacc'] !== '-')->count(),
-                'tanpa_tacc' => $rows->filter(fn ($row) => $row['tacc'] === '-')->count(),
+                'non_spesialis' => $nonSpesialis,
+                'spesialis' => $rows->count() - $nonSpesialis,
             ];
         }
 

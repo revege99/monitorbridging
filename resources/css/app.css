@@ -33,6 +33,49 @@
 }
 
 @layer components {
+    @media (min-width: 1024px) {
+        body:has(> div > aside) {
+            height: 100dvh;
+            overflow: hidden;
+        }
+
+        body > div:has(> aside) {
+            height: 100dvh;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        body > div:has(> aside) > aside {
+            position: sticky;
+            top: 0;
+            height: 100dvh;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        body > div:has(> aside) > aside > div.relative {
+            min-height: 0;
+        }
+
+        body > div:has(> aside) > aside nav {
+            min-height: 0;
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            scrollbar-gutter: stable;
+        }
+
+        body > div:has(> aside) > main {
+            height: 100dvh;
+            min-height: 0;
+            max-height: 100dvh;
+            overscroll-behavior: contain;
+        }
+
+        body > div:has(> aside) > main:not(.overflow-hidden) {
+            overflow-y: auto;
+        }
+    }
+
     .app-loading-overlay {
         position: fixed;
         inset: 0;
@@ -113,6 +156,40 @@
         background-color: rgb(255 255 255 / 0.9);
         box-shadow: 0 1px 3px rgb(15 23 42 / 0.06);
         backdrop-filter: blur(12px);
+    }
+
+    aside nav a {
+        font-size: 0.8125rem !important;
+        line-height: 1.125rem !important;
+        padding-top: 0.375rem !important;
+        padding-bottom: 0.375rem !important;
+    }
+
+    aside nav button,
+    aside nav button span {
+        font-size: 0.8125rem !important;
+        line-height: 1.125rem !important;
+    }
+
+    aside nav button {
+        padding-top: 0.125rem !important;
+        padding-bottom: 0.125rem !important;
+    }
+
+    aside nav button > span:first-child {
+        height: 2.25rem !important;
+    }
+
+    aside nav button > span:nth-child(2) {
+        white-space: nowrap;
+    }
+
+    .bpjs-config-page main button {
+        height: 35px;
+    }
+
+    .integration-config-page main button {
+        height: 35px;
     }
 
     .compact-data-table tbody td {

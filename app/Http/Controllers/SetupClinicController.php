@@ -96,7 +96,7 @@ class SetupClinicController extends Controller
     public function storeUser(Request $request)
     {
         $this->authorizeSuperadmin($request);
-        $data = $request->validate(['name' => ['required'], 'email' => ['required', 'email', 'unique:central.users,email'], 'password' => ['required', 'min:8', 'confirmed'], 'role' => ['required', Rule::in(['superadmin', 'admin'])], 'clinic_id' => ['nullable', 'exists:central.clinics,id']]);
+        $data = $request->validate(['name' => ['required'], 'username' => ['required', 'alpha_dash', 'max:60', 'unique:central.users,username'], 'email' => ['required', 'email', 'unique:central.users,email'], 'password' => ['required', 'confirmed'], 'role' => ['required', Rule::in(['superadmin', 'admin'])], 'clinic_id' => ['nullable', 'exists:central.clinics,id']]);
         if ($data['role'] === 'admin' && empty($data['clinic_id'])) return back()->withErrors(['clinic_id' => 'Admin wajib memiliki klinik.']);
         User::create($data + ['is_active' => true]);
         return back()->with('success', 'User berhasil ditambahkan.');
@@ -105,7 +105,7 @@ class SetupClinicController extends Controller
     public function updateUser(Request $request, User $user)
     {
         $this->authorizeSuperadmin($request);
-        $data = $request->validate(['name' => ['required'], 'email' => ['required', 'email', Rule::unique('central.users', 'email')->ignore($user->id)], 'password' => ['nullable', 'min:8', 'confirmed'], 'role' => ['required', Rule::in(['superadmin', 'admin'])], 'clinic_id' => ['nullable', 'exists:central.clinics,id'], 'is_active' => ['boolean']]);
+        $data = $request->validate(['name' => ['required'], 'username' => ['required', 'alpha_dash', 'max:60', Rule::unique('central.users', 'username')->ignore($user->id)], 'email' => ['required', 'email', Rule::unique('central.users', 'email')->ignore($user->id)], 'password' => ['nullable', 'confirmed'], 'role' => ['required', Rule::in(['superadmin', 'admin'])], 'clinic_id' => ['nullable', 'exists:central.clinics,id'], 'is_active' => ['boolean']]);
         if (blank($data['password'] ?? null)) unset($data['password']);
         $data['clinic_id'] = $data['role'] === 'superadmin' ? null : ($data['clinic_id'] ?? null);
         if ($data['role'] === 'admin' && empty($data['clinic_id'])) return back()->withErrors(['clinic_id' => 'Admin wajib memiliki klinik.']);

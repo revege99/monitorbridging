@@ -4,7 +4,7 @@
         ['label' => 'Laporan', 'color' => 'text-emerald-300', 'items' => ['Rekap Harian','Rekap Bulanan','Rekap Antrean BPJS','Rekap Bridging Pelayanan','Rekap Kendala Bridging','Rekap Waktu Pelayanan','Audit Bridging','Export Data']],
         ['label' => 'Audit Log', 'color' => 'text-amber-300', 'items' => ['Log Antrean BPJS','Log Bridging Pelayanan','Log Request API','Log Response API','Riwayat Retry Bridging','Aktivitas Pengguna']],
         ['label' => 'Master Data', 'color' => 'text-violet-300', 'items' => ['Mapping Dokter BPJS','Mapping Poli BPJS','Mapping Diagnosa (ICD-10)','Mapping Tindakan','Mapping Status Pulang','Jadwal Dokter']],
-        ['label' => 'Pengaturan', 'color' => 'text-slate-300', 'items' => ['Target SLA Pelayanan','Konfigurasi Bridging','Retry Bridging Otomatis','Notifikasi Monitoring','Hak Akses Pengguna','Parameter Sistem']],
+        ['label' => 'Konfigurasi Bridging', 'color' => 'text-slate-300', 'items' => ['BPJS','Satu Sehat','Base URL BPJS','Base URL Satu Sehat']],
     ];
 @endphp
 @foreach($secondaryGroups as $group)
@@ -18,7 +18,7 @@
                 <div class="ml-auto flex shrink-0 items-center gap-2"><div class="h-px w-10 bg-white/10"></div><svg class="h-5 w-5 text-slate-400 transition duration-200" data-dropdown-icon viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg></div>
             </button>
             <div class="mt-1 hidden space-y-1 pl-[7px]" data-dropdown-panel>
-                @foreach($group['items'] as $item)<a href="#" class="flex items-center gap-3 rounded-xl px-2 py-2.5 text-sm text-slate-300 hover:bg-white/5"><span class="h-1.5 w-1.5 rounded-full bg-slate-500"></span><span>{{ $item }}</span></a>@endforeach
+                @foreach($group['items'] as $item)<a href="{{ $group['label'] === 'Konfigurasi Bridging' ? match($item) { 'BPJS' => route('configurations.bpjs.index'), 'Satu Sehat' => route('configurations.satu-sehat.index'), 'Base URL BPJS' => route('configurations.base-url.index'), 'Base URL Satu Sehat' => route('configurations.satu-sehat-base-url.index'), default => '#' } : '#' }}" class="flex items-center gap-3 rounded-xl px-2 py-2.5 text-sm text-slate-300 hover:bg-white/5"><span class="h-1.5 w-1.5 rounded-full bg-slate-500"></span><span>{{ $item }}</span></a>@endforeach
             </div>
         </div>
     </section>

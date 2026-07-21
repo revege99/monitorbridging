@@ -9,6 +9,7 @@
         const main = document.querySelector('main');
         const select = form.querySelector('select[name="clinic_id"]');
         if (!main || !select) return;
+        const formData = new FormData(form);
 
         switching = true;
         window.dispatchEvent(new CustomEvent('app:loading', {detail: {show: true, message: 'Mengganti klinik...'}}));
@@ -18,7 +19,7 @@
         try {
             const switchResponse = await fetch(form.action, {
                 method: 'POST',
-                body: new FormData(form),
+                body: formData,
                 credentials: 'same-origin',
                 headers: {
                     Accept: 'application/json',
@@ -26,13 +27,22 @@
                 },
             });
 
-            if (!switchResponse.ok) throw new Error('Gagal mengganti klinik.');
+            if (!switchResponse.ok) {
+                const errorData = await switchResponse.json().catch(() => null);
+                const validationMessage = errorData?.errors
+                    ? Object.values(errorData.errors).flat()[0]
+                    : null;
+                throw new Error(validationMessage || errorData?.message || 'Gagal mengganti klinik.');
+            }
 
             const pageResponse = await fetch(window.location.href, {
                 credentials: 'same-origin',
                 headers: {'X-Requested-With': 'XMLHttpRequest'},
             });
-            if (!pageResponse.ok) throw new Error('Gagal memuat data klinik.');
+            if (!pageResponse.ok) {
+                const errorData = await pageResponse.json().catch(() => null);
+                throw new Error(errorData?.message || 'Klinik berhasil dipilih, tetapi data klinik gagal dimuat.');
+            }
 
             const html = await pageResponse.text();
             const nextDocument = new DOMParser().parseFromString(html, 'text/html');

@@ -295,7 +295,7 @@
                                                 <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 0-.33 1V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-.33-1 1.65 1.65 0 0 0-1-.6 1.65 1.65 0 0 0-1.82.33l-.06.06A2 2 0 1 1 3.63 16l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-.6-1 1.65 1.65 0 0 0-1-.33H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1-.33 1.65 1.65 0 0 0 .6-1 1.65 1.65 0 0 0-.33-1.82L4.3 6.46A2 2 0 1 1 7.12 3.64l.06.06A1.65 1.65 0 0 0 9 4.6c.39-.14.74-.39 1-.72.2-.27.31-.6.33-.94V3a2 2 0 1 1 4 0v.09c.02.34.13.67.33.94.26.33.61.58 1 .72a1.65 1.65 0 0 0 1.82-.33l.06-.06A2 2 0 1 1 20.36 7.18l-.06.06c-.46.46-.6 1.14-.33 1.82.14.39.39.74.72 1 .27.2.6.31.94.33H21a2 2 0 1 1 0 4h-.09c-.34.02-.67.13-.94.33-.33.26-.58.61-.72 1Z" />
                                             </svg>
                                         </span>
-                                        <span class="min-w-0 flex-1 text-sm font-semibold">Pengaturan</span>
+                                        <span class="min-w-0 flex-1 text-sm font-semibold">Konfigurasi Bridging</span>
                                         <div class="ml-auto flex shrink-0 items-center gap-3">
                                             <div class="h-px w-24 bg-white/10"></div>
                                             <svg class="h-5 w-5 text-slate-400 transition duration-200" data-dropdown-icon viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
@@ -304,8 +304,8 @@
                                         </div>
                                     </button>
                                     <div class="mt-1 space-y-1 pl-[7px] text-sm text-slate-300" data-dropdown-panel>
-                                        @foreach (['Target SLA Pelayanan', 'Konfigurasi Bridging', 'Retry Bridging Otomatis', 'Notifikasi Monitoring', 'Hak Akses Pengguna', 'Parameter Sistem'] as $item)
-                                            <a href="#" class="flex items-center gap-3 rounded-xl px-2 py-2.5 hover:bg-white/5">
+                                        @foreach (['BPJS', 'Satu Sehat', 'Base URL BPJS', 'Base URL Satu Sehat'] as $item)
+                                            <a href="{{ match($item) { 'BPJS' => route('configurations.bpjs.index'), 'Satu Sehat' => route('configurations.satu-sehat.index'), 'Base URL BPJS' => route('configurations.base-url.index'), default => route('configurations.satu-sehat-base-url.index') } }}" class="flex items-center gap-3 rounded-xl px-2 py-2.5 hover:bg-white/5">
                                                 <span class="h-1.5 w-1.5 rounded-full bg-slate-500"></span>
                                                 <svg class="h-5 w-5 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                                                     <path d="M12 2v4" />

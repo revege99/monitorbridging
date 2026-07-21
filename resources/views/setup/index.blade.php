@@ -31,7 +31,7 @@
                     <h2 class="text-base font-semibold">{{ ['clinics' => 'Profil Klinik', 'database' => 'Konfigurasi DB', 'users' => 'Manajemen User'][$tab] ?? 'Setup Klinik' }}</h2>
                     <div class="mt-1 flex items-center gap-2 text-xs text-slate-500"><span class="text-cyan-600">Setup Klinik</span><span>&gt;</span><span>{{ ['clinics' => 'Profil Klinik', 'database' => 'Konfigurasi DB', 'users' => 'Manajemen User'][$tab] ?? '' }}</span></div>
                 </div>
-                @include('partials.clinic-selector')
+                @include('partials.clinic-selector', ['hideClinicSelector' => $tab === 'users'])
             </div>
         </header>
 
@@ -64,7 +64,7 @@
                 <section class="rounded-2xl border border-slate-200 bg-white shadow-sm">
                     <div class="flex items-center justify-between border-b px-5 py-4"><div><h3 class="font-semibold">Manajemen User</h3><p class="mt-1 text-xs text-slate-500">Atur akses superadmin dan admin klinik.</p></div><button data-modal-open="user-create" class="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white">+ Tambah User</button></div>
                     <div class="overflow-x-auto"><table class="w-full text-left text-sm"><thead class="bg-slate-50 text-xs text-slate-500"><tr><th class="px-5 py-3">User</th><th>Role</th><th>Klinik</th><th>Status</th><th class="pr-5 text-right">Aksi</th></tr></thead><tbody>
-                    @forelse($users as $managedUser)<tr class="border-t"><td class="px-5 py-4"><div class="font-semibold">{{ $managedUser->name }}</div><div class="text-xs text-slate-500">{{ $managedUser->email }}</div></td><td><span class="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700">{{ ucfirst($managedUser->role) }}</span></td><td>{{ $managedUser->clinic?->name ?? 'Semua Klinik' }}</td><td>{{ $managedUser->is_active ? 'Aktif' : 'Nonaktif' }}</td><td class="pr-5 text-right"><button data-modal-open="user-edit-{{ $managedUser->id }}" class="rounded-lg border px-3 py-2 text-xs font-semibold text-blue-600">Edit</button></td></tr>@empty<tr><td colspan="5" class="p-12 text-center text-slate-500">Belum ada user.</td></tr>@endforelse
+                    @forelse($users as $managedUser)<tr class="border-t"><td class="px-5 py-4"><div class="font-semibold">{{ $managedUser->name }}</div><div class="text-xs text-slate-500">{{ '@'.$managedUser->username }} · {{ $managedUser->email }}</div></td><td><span class="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700">{{ ucfirst($managedUser->role) }}</span></td><td>{{ $managedUser->clinic?->name ?? 'Semua Klinik' }}</td><td>{{ $managedUser->is_active ? 'Aktif' : 'Nonaktif' }}</td><td class="pr-5 text-right"><button data-modal-open="user-edit-{{ $managedUser->id }}" class="rounded-lg border px-3 py-2 text-xs font-semibold text-blue-600">Edit</button></td></tr>@empty<tr><td colspan="5" class="p-12 text-center text-slate-500">Belum ada user.</td></tr>@endforelse
                     </tbody></table></div>
                 </section>
                 <x-setup-modal id="user-create" title="Tambah User"><form method="POST" action="{{ route('setup.users.store') }}">@csrf @include('setup.partials.user-form', ['managedUser' => null])</form></x-setup-modal>

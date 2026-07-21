@@ -308,7 +308,7 @@
                                                 <path d="m16.24 7.76 2.83-2.83" />
                                             </svg>
                                         </span>
-                                        <span class="min-w-0 flex-1 text-sm font-semibold">Pengaturan</span>
+                                        <span class="min-w-0 flex-1 text-sm font-semibold">Konfigurasi Bridging</span>
                                         <div class="ml-auto flex shrink-0 items-center gap-3">
                                             <div class="h-px w-24 bg-white/10"></div>
                                             <svg class="h-5 w-5 text-slate-400 transition duration-200" data-dropdown-icon viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
@@ -317,8 +317,8 @@
                                         </div>
                                     </button>
                                     <div class="mt-1 space-y-1 pl-[7px] text-sm text-slate-300" data-dropdown-panel>
-                                        @foreach (['Target SLA Pelayanan', 'Konfigurasi Bridging', 'Retry Bridging Otomatis', 'Notifikasi Monitoring', 'Hak Akses Pengguna', 'Parameter Sistem'] as $item)
-                                            <a href="#" class="flex items-center gap-3 rounded-xl px-2 py-2.5 hover:bg-white/5">
+                                        @foreach (['BPJS', 'Satu Sehat', 'Base URL BPJS', 'Base URL Satu Sehat'] as $item)
+                                            <a href="{{ match($item) { 'BPJS' => route('configurations.bpjs.index'), 'Satu Sehat' => route('configurations.satu-sehat.index'), 'Base URL BPJS' => route('configurations.base-url.index'), default => route('configurations.satu-sehat-base-url.index') } }}" class="flex items-center gap-3 rounded-xl px-2 py-2.5 hover:bg-white/5">
                                                 <span class="h-1.5 w-1.5 rounded-full bg-slate-500"></span>
                                                 <svg class="h-5 w-5 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                                                     <path d="M12 2v4" />
@@ -369,7 +369,7 @@
                         </div>
                     </div>
 
-                    <div class="mt-1 grid gap-2.5 md:grid-cols-2 xl:grid-cols-4">
+                    <div class="mt-1 grid gap-2.5 {{ $isRujuk ? 'grid-cols-3' : 'grid-cols-4' }}">
                         <div class="rounded-3xl border border-slate-200 bg-white p-3.5 shadow-sm">
                             <div class="flex items-start gap-3">
                                 <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
@@ -409,11 +409,12 @@
                                     </svg>
                                 </div>
                                 <div>
-                                    <p class="text-xs text-slate-500">{{ $isRujuk ? 'Dengan TACC' : 'Bridging H+1' }}</p>
-                                    <p class="mt-2 text-2xl font-semibold text-slate-950">{{ $isRujuk ? $summary['dengan_tacc'] : $summary['cross_day'] }}</p>
+                                    <p class="text-xs text-slate-500">{{ $isRujuk ? 'Spesialis' : 'Bridging H+1' }}</p>
+                                    <p class="mt-2 text-2xl font-semibold text-slate-950">{{ $isRujuk ? $summary['spesialis'] : $summary['cross_day'] }}</p>
                                 </div>
                             </div>
                         </div>
+                        @if(! $isRujuk)
                         <div class="rounded-3xl border border-slate-200 bg-white p-3.5 shadow-sm">
                             <div class="flex items-start gap-3">
                                 <div class="flex h-10 w-10 items-center justify-center rounded-2xl {{ $isRujuk ? 'bg-rose-50 text-rose-600' : 'bg-rose-50 text-rose-600' }}">
@@ -424,11 +425,12 @@
                                     </svg>
                                 </div>
                                 <div>
-                                    <p class="text-xs text-slate-500">{{ $isRujuk ? 'Tanpa TACC' : 'Belum Bridging' }}</p>
-                                    <p class="mt-2 text-2xl font-semibold text-slate-950">{{ $isRujuk ? $summary['tanpa_tacc'] : $summary['not_bridged'] }}</p>
+                                    <p class="text-xs text-slate-500">Belum Bridging</p>
+                                    <p class="mt-2 text-2xl font-semibold text-slate-950">{{ $summary['not_bridged'] }}</p>
                                 </div>
                             </div>
                         </div>
+                        @endif
                     </div>
 
                     @if ($usingFallback)

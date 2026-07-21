@@ -47,7 +47,7 @@
     });
 
     document.addEventListener('submit', (event) => {
-        if (event.defaultPrevented || event.target.matches('[data-preserve-sidebar]')) return;
+        if (event.defaultPrevented || event.target.matches('[data-preserve-sidebar], [data-no-loading]')) return;
         show('Memproses permintaan...');
     });
 
