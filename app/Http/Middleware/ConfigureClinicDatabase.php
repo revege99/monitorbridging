@@ -26,7 +26,7 @@ class ConfigureClinicDatabase
         view()->share('availableClinics', $user->isSuperadmin() ? Clinic::where('is_active', true)->orderBy('name')->get() : collect([$user->clinic])->filter());
         view()->share('activeClinic', $clinic);
 
-        $centralOnlyRoute = $request->routeIs('setup.*', 'logout', 'clinics.select', 'account.password.update');
+        $centralOnlyRoute = $request->routeIs('setup.*', 'service-monitor.*', 'logout', 'clinics.select', 'account.password.update');
 
         if (!$clinic?->database && !$centralOnlyRoute) {
             if ($user->isSuperadmin()) return redirect()->route('setup.index', ['tab' => 'database']);

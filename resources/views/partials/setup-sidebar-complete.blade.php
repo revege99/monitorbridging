@@ -22,6 +22,14 @@
         ]],
     ];
 @endphp
+<section>
+    <a href="{{ route('service-monitor.index') }}" class="flex w-full items-center gap-2 rounded-2xl px-0 py-1.5 text-left {{ request()->routeIs('service-monitor.*') ? 'bg-cyan-400/8 text-white ring-1 ring-cyan-400/10' : 'text-white hover:bg-white/5' }}">
+        <span class="flex h-11 w-11 shrink-0 items-center justify-center text-cyan-300">
+            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l2-5 4 10 2-5h6"/><path d="M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z"/></svg>
+        </span>
+        <span class="min-w-0 flex-1 text-sm font-semibold">Monitor Service</span>
+    </a>
+</section>
 @foreach($sidebarGroups as $group)
     <section>
         <button type="button" class="flex w-full cursor-pointer items-center gap-2 rounded-2xl px-0 py-1.5 text-left text-white" data-dropdown-toggle aria-expanded="false">
