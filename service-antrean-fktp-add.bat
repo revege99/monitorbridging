@@ -49,6 +49,27 @@ echo PHP    : %PHP_BIN%
 "%PHP_BIN%" -r "echo 'PDO Drivers: '.implode(',', PDO::getAvailableDrivers()).PHP_EOL;"
 echo ==============================================
 echo.
+
+rem Jangan hapus lock jika worker yang sama memang masih aktif.
+powershell.exe -NoProfile -ExecutionPolicy Bypass -Command ^
+    "$running = Get-CimInstance Win32_Process | Where-Object { $_.Name -eq 'php.exe' -and $_.CommandLine -match 'artisan\s+service:antrean-fktp-add(?:\s|$)' }; if ($running) { exit 10 }"
+
+if errorlevel 10 (
+    echo [INFO] Service Add Antrean FKTP sudah berjalan.
+    echo Tidak ada service baru yang dijalankan.
+    goto :finish
+)
+
+echo Membersihkan cache dan lock service sebelumnya...
+"%PHP_BIN%" artisan cache:clear
+if errorlevel 1 (
+    echo.
+    echo [ERROR] Cache Laravel tidak dapat dibersihkan.
+    goto :finish
+)
+
+echo Cache berhasil dibersihkan.
+echo.
 "%PHP_BIN%" artisan service:antrean-fktp-add
 
 if errorlevel 1 (
