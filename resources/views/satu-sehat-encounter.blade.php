@@ -81,7 +81,7 @@
                                             </svg>
                                             <span>Statistik Pasien</span>
                                         </a>
-                                        <a href="{{ url('/') }}" class="flex items-center gap-2.5 rounded-xl px-2 py-2.5 text-sm text-slate-300 hover:bg-white/5">
+                                        <a href="{{ route('monitoring.bridging-pelayanan') }}" class="flex items-center gap-2.5 rounded-xl px-2 py-2.5 text-sm text-slate-300 hover:bg-white/5">
                                             <span class="h-1.5 w-1.5 rounded-full bg-slate-500"></span>
                                             <svg class="h-5 w-5 text-blue-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                                                 <path d="m22 2-7 20-4-9-9-4Z" />

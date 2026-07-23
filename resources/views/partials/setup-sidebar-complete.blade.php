@@ -1,7 +1,7 @@
 @php
     $sidebarGroups = [
         ['label' => 'Monitor BPJS', 'color' => 'text-blue-300', 'items' => [
-            ['Statistik Pasien', route('monitoring.statistik-pasien')], ['Bridging Pelayanan', url('/')],
+            ['Statistik Pasien', route('monitoring.statistik-pasien')], ['Bridging Pelayanan', route('monitoring.bridging-pelayanan')],
             ['Belum Bridging', route('monitoring.bpjs-tidak-bridging')], ['Kendala Bridging', route('monitoring.kendala-bridging')],
             ['Timeline Pelayanan', route('monitoring.timeline-pelayanan')],
         ]],

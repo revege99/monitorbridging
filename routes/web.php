@@ -23,6 +23,7 @@ use App\Http\Controllers\SatuSehatBaseUrlConfigurationController;
 use App\Http\Controllers\InstallationController;
 use App\Http\Controllers\QueueDisplayController;
 use App\Http\Controllers\KioskController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Middleware\ConfigureClinicDatabase;
 use Illuminate\Support\Facades\Route;
 
@@ -71,7 +72,8 @@ Route::post('/aktivasi-instalasi', [InstallationController::class, 'activate'])-
 Route::get('/service-monitor/antrean', [InstallationController::class, 'monitor'])->name('service-monitor.index');
 Route::get('/service-monitor/antrean/logs', [InstallationController::class, 'logs'])->name('service-monitor.logs');
 
-Route::get('/', [BridgingPelayananController::class, 'index']);
+Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+Route::get('/monitoring/bridging-pelayanan', [BridgingPelayananController::class, 'index'])->name('monitoring.bridging-pelayanan');
 Route::get('/monitoring/statistik-pasien', [StatistikPasienController::class, 'index'])->name('monitoring.statistik-pasien');
 Route::get('/monitoring/bpjs-tidak-bridging', [BpjsTidakBridgingController::class, 'index'])->name('monitoring.bpjs-tidak-bridging');
 Route::get('/monitoring/kendala-bridging', [KendalaBridgingController::class, 'index'])->name('monitoring.kendala-bridging');

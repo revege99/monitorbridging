@@ -9,6 +9,32 @@
         return;
     }
 
+    const dashboardLink = Array.from(sidebar.querySelectorAll('a[href]'))
+        .find((link) => link.textContent.trim().toLowerCase().includes('dashboard'));
+
+    if (dashboardLink) {
+        dashboardLink.className = 'flex h-10 w-full items-center gap-2 rounded-2xl px-0 text-left text-white transition hover:bg-white/5';
+        dashboardLink.innerHTML = `
+            <span class="flex h-10 w-11 shrink-0 items-center justify-center text-blue-300">
+                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="m3 10 9-7 9 7"></path>
+                    <path d="M5 9v11h14V9"></path>
+                    <path d="M9 20v-6h6v6"></path>
+                </svg>
+            </span>
+            <span class="min-w-0 flex-1 text-sm font-semibold">Dashboard</span>
+        `;
+
+        const dashboardWrapper = dashboardLink.parentElement;
+        if (
+            dashboardWrapper
+            && dashboardWrapper !== sidebar
+            && dashboardWrapper.children.length === 1
+        ) {
+            dashboardWrapper.classList.remove('-ml-[5px]', 'mb-2');
+        }
+    }
+
     if (!sidebar.querySelector('[data-queue-display-link]')) {
         const displayLink = document.createElement('a');
         displayLink.href = new URL('display/antrean', applicationBaseUrl).href;
@@ -26,9 +52,6 @@
             </span>
             <span class="min-w-0 flex-1 text-sm font-semibold">Display Antrean</span>
         `;
-
-        const dashboardLink = Array.from(sidebar.querySelectorAll('a[href]'))
-            .find((link) => link.textContent.trim().toLowerCase().includes('dashboard'));
 
         if (dashboardLink) {
             const dashboardWrapper = dashboardLink.parentElement;
