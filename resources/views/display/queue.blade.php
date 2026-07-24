@@ -22,7 +22,7 @@
     <footer><div class="status"><span class="dot"></span><span id="connection">Display terhubung</span></div><button id="sound">Aktifkan suara panggilan</button></footer>
 </div>
 <script src="https://code.responsivevoice.org/responsivevoice.js?key=jgnnOkio"></script>
-<script>
+<script type="application/json" id="legacy-queue-display-script">
 const initial=@json($initialState);let latestId=initial.latest?.id??null;let soundEnabled=localStorage.getItem('queue-display-sound')==='on';
 const el=id=>document.getElementById(id), soundButton=el('sound');
 function updateClock(){const now=new Date();el('clock').textContent=now.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}).replace('.',':');el('date').textContent=now.toLocaleDateString('id-ID',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});}updateClock();setInterval(updateClock,1000);
@@ -36,5 +36,7 @@ function render(state,announce=false){const call=state.latest;if(call){el('empty
 function escapeHtml(value){const div=document.createElement('div');div.textContent=value??'';return div.innerHTML}
 async function refresh(){try{const response=await fetch('{{ route('api.display.state') }}',{headers:{Accept:'application/json'},cache:'no-store'});if(!response.ok)throw new Error();const state=await response.json();const next=state.latest?.id??null;render(state,next!==null&&next!==latestId);latestId=next;el('connection').textContent='Display terhubung'}catch(e){el('connection').textContent='Mencoba menghubungkan kembali...'}}render(initial);setInterval(refresh,1000);
 </script>
+<script id="queue-display-state" type="application/json">{!! json_encode($initialState, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) !!}</script>
+<script src="{{ asset('js/queue-display.js') }}" data-state-url="{{ route('api.display.state') }}"></script>
 </body>
 </html>

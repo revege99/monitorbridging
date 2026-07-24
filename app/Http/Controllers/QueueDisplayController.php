@@ -83,12 +83,12 @@ class QueueDisplayController extends Controller
     private function statePayload(?int $clinicId): array
     {
         if (!$clinicId) {
-            return ['latest' => null, 'recent' => [], 'polis' => [], 'server_time' => now('Asia/Jakarta')->toIso8601String()];
+            return ['latest' => null, 'recent' => [], 'calls' => [], 'polis' => [], 'server_time' => now('Asia/Jakarta')->toIso8601String()];
         }
 
         $installation = $this->installation();
         if (!$installation?->clinic?->database) {
-            return ['latest' => null, 'recent' => [], 'polis' => [], 'server_time' => now('Asia/Jakarta')->toIso8601String()];
+            return ['latest' => null, 'recent' => [], 'calls' => [], 'polis' => [], 'server_time' => now('Asia/Jakarta')->toIso8601String()];
         }
 
         $this->activeInstallation->configureClinicDatabase($installation);
@@ -99,6 +99,7 @@ class QueueDisplayController extends Controller
         return [
             'latest' => $calls->first() ? $this->serialize($calls->first()) : null,
             'recent' => $calls->skip(1)->take(6)->map(fn (QueueCallHistory $call) => $this->serialize($call))->values(),
+            'calls' => $todayCalls->take(20)->map(fn (QueueCallHistory $call) => $this->serialize($call))->values(),
             'polis' => $this->scheduledPolis($todayCalls),
             'server_time' => now('Asia/Jakarta')->toIso8601String(),
         ];
