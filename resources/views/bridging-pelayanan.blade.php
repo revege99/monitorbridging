@@ -357,13 +357,13 @@
                     </div>
                 </div>
 
-                <div class="px-3 py-4 lg:px-3">
-                    <div class="mb-8 rounded-xl border border-slate-200 bg-white p-2 shadow-sm">
+                <div class="px-3 pb-4 pt-[11px] lg:px-3">
+                    <div class="mb-3 rounded-xl border border-slate-200 bg-white p-2 shadow-sm">
                         <div class="flex flex-wrap gap-2">
-                            <a href="{{ url('/?' . http_build_query($rajalQuery)) }}" class="@if(! $isRujuk) bg-blue-600 text-white shadow-sm @else bg-slate-100 text-slate-600 hover:bg-slate-200 @endif inline-flex items-center rounded-2xl px-4 py-2 text-xs font-semibold transition">
+                            <a href="{{ route('monitoring.bridging-pelayanan', $rajalQuery) }}" class="@if(! $isRujuk) bg-blue-600 text-white shadow-sm @else bg-slate-100 text-slate-600 hover:bg-slate-200 @endif inline-flex items-center rounded-2xl px-4 py-2 text-xs font-semibold transition">
                                 Bridging Rajal
                             </a>
-                            <a href="{{ url('/?' . http_build_query($rujukQuery)) }}" class="@if($isRujuk) bg-blue-600 text-white shadow-sm @else bg-slate-100 text-slate-600 hover:bg-slate-200 @endif inline-flex items-center rounded-2xl px-4 py-2 text-xs font-semibold transition">
+                            <a href="{{ route('monitoring.bridging-pelayanan', $rujukQuery) }}" class="@if($isRujuk) bg-blue-600 text-white shadow-sm @else bg-slate-100 text-slate-600 hover:bg-slate-200 @endif inline-flex items-center rounded-2xl px-4 py-2 text-xs font-semibold transition">
                                 Bridging Rujuk
                             </a>
                         </div>
@@ -443,7 +443,7 @@
                     @endif
 
                     <div class="mt-2.5 rounded-xl border border-slate-200 bg-white p-2 shadow-sm">
-                        <form method="GET" action="{{ url('/') }}" class="grid gap-2 lg:grid-cols-[minmax(0,1.3fr)_repeat(2,minmax(0,0.8fr))_minmax(0,0.9fr)_auto]">
+                        <form method="GET" action="{{ route('monitoring.bridging-pelayanan') }}" class="grid gap-2 lg:grid-cols-[minmax(0,1.3fr)_repeat(2,minmax(0,0.8fr))_minmax(0,0.9fr)_auto]">
                             <input type="hidden" name="jenis" value="{{ $filters['jenis'] }}">
                             <div>
                                 <label class="mb-1.5 block text-xs font-medium text-slate-700">Cari Pasien</label>
@@ -478,7 +478,7 @@
                                 <button type="submit" class="inline-flex h-[35px] cursor-pointer items-center justify-center rounded-2xl bg-blue-600 px-4 text-xs font-semibold text-white transition hover:bg-blue-700">
                                     Filter
                                 </button>
-                                <a href="{{ url('/?' . http_build_query(['jenis' => $filters['jenis']])) }}" class="inline-flex h-[35px] items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-600 transition hover:bg-slate-50">
+                                <a href="{{ route('monitoring.bridging-pelayanan', ['jenis' => $filters['jenis']]) }}" class="inline-flex h-[35px] items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-600 transition hover:bg-slate-50">
                                     Reset
                                 </a>
                             </div>
@@ -520,7 +520,10 @@
                                                 <p class="font-medium text-slate-900">{{ $row['no_rawat'] }}</p>
                                                 <p class="mt-1 text-xs text-slate-500">RM {{ $row['norm'] }}</p>
                                             </td>
-                                            <td class="w-56 px-3 py-3.5 font-medium text-slate-900">{{ $row['pasien'] }}</td>
+                                            <td class="w-56 px-3 py-3.5">
+                                                <p class="font-medium text-slate-900">{{ $row['pasien'] }}</p>
+                                                <p class="mt-1 text-xs text-slate-500">{{ $row['no_peserta'] ?? '-' }}</p>
+                                            </td>
                                             <td class="px-3 py-3.5 text-slate-700">{{ $row['poli'] }}</td>
                                             <td class="px-3 py-3.5">
                                                 <p class="font-medium text-slate-900">{{ $row['reg_tanggal'] }}</p>
@@ -544,8 +547,14 @@
                                                     <p class="mt-1 text-xs text-slate-500">{{ $row['alasan_tacc'] }}</p>
                                                 </td>
                                             @else
-                                                <td class="px-3 py-3.5 text-slate-700">{{ $row['pcare_daftar'] ?? '-' }}</td>
-                                                <td class="px-3 py-3.5 text-slate-700">{{ $row['pcare_kunjungan'] ?? '-' }}</td>
+                                                <td class="px-3 py-3.5">
+                                                    <p class="font-medium text-slate-900">{{ $row['nomor_pendaftaran'] ?? '-' }}</p>
+                                                    <p class="mt-1 text-xs text-slate-500">{{ $row['pcare_daftar'] ?? '-' }}</p>
+                                                </td>
+                                                <td class="px-3 py-3.5">
+                                                    <p class="font-medium text-slate-900">{{ $row['nomor_kunjungan'] ?? '-' }}</p>
+                                                    <p class="mt-1 text-xs text-slate-500">{{ $row['pcare_kunjungan'] ?? '-' }}</p>
+                                                </td>
                                                 <td class="px-3 py-3.5 text-center">
                                                     <span class="@if($row['warna'] === 'emerald') bg-emerald-50 text-emerald-700 @elseif($row['warna'] === 'amber') bg-amber-50 text-amber-700 @else bg-rose-50 text-rose-700 @endif inline-flex rounded-full px-3 py-1 text-[11px] font-semibold">
                                                         {{ $row['status'] }}

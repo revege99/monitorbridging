@@ -87,8 +87,11 @@ class BridgingPelayananController extends Controller
                 'rp.tgl_registrasi',
                 'rp.jam_reg',
                 'ps.nm_pasien',
+                'ps.no_peserta',
                 'pl.nm_poli',
+                'pp.noUrut as nomor_pendaftaran',
                 'pp.tglDaftar as pcare_daftar',
+                'pk.noKunjungan as nomor_kunjungan',
                 'pk.tglDaftar as pcare_kunjungan',
             ])
             ->where('rp.kd_pj', 'BPJ')
@@ -116,7 +119,8 @@ class BridgingPelayananController extends Controller
             $rows->where(function ($query) use ($search) {
                 $query->where('rp.no_rawat', 'like', '%' . $search . '%')
                     ->orWhere('rp.no_rkm_medis', 'like', '%' . $search . '%')
-                    ->orWhere('ps.nm_pasien', 'like', '%' . $search . '%');
+                    ->orWhere('ps.nm_pasien', 'like', '%' . $search . '%')
+                    ->orWhere('ps.no_peserta', 'like', '%' . $search . '%');
             });
         }
 
@@ -189,10 +193,13 @@ class BridgingPelayananController extends Controller
                         'no_rawat' => $row->no_rawat,
                         'norm' => $row->no_rkm_medis,
                         'pasien' => $row->nm_pasien ?: '-',
+                        'no_peserta' => $row->no_peserta ?: '-',
                         'poli' => $row->nm_poli ?: $row->kd_poli ?: '-',
                         'reg_tanggal' => $row->tgl_registrasi,
                         'reg_jam' => $row->jam_reg,
+                        'nomor_pendaftaran' => $row->nomor_pendaftaran ?: '-',
                         'pcare_daftar' => $row->pcare_daftar,
+                        'nomor_kunjungan' => $row->nomor_kunjungan ?: '-',
                         'pcare_kunjungan' => $row->pcare_kunjungan,
                         'status' => $status,
                         'warna' => $color,
@@ -221,6 +228,7 @@ class BridgingPelayananController extends Controller
                 'rp.jam_reg',
                 'rp.kd_poli',
                 'ps.nm_pasien',
+                'ps.no_peserta',
                 'pl.nm_poli',
                 'prs.tglDaftar as tgl_rujuk',
                 'prs.nmSubSpesialis',
@@ -250,6 +258,7 @@ class BridgingPelayananController extends Controller
                 $query->where('rp.no_rawat', 'like', '%' . $search . '%')
                     ->orWhere('rp.no_rkm_medis', 'like', '%' . $search . '%')
                     ->orWhere('ps.nm_pasien', 'like', '%' . $search . '%')
+                    ->orWhere('ps.no_peserta', 'like', '%' . $search . '%')
                     ->orWhere('dp.kd_penyakit', 'like', '%' . $search . '%')
                     ->orWhere('dp.nonSpesialis', 'like', '%' . $search . '%');
             });
@@ -265,6 +274,7 @@ class BridgingPelayananController extends Controller
                         'no_rawat' => $row->no_rawat,
                         'norm' => $row->no_rkm_medis,
                         'pasien' => $row->nm_pasien ?: '-',
+                        'no_peserta' => $row->no_peserta ?: '-',
                         'poli' => $row->nm_poli ?: $row->kd_poli ?: '-',
                         'reg_tanggal' => $row->tgl_registrasi,
                         'reg_jam' => $row->jam_reg,
@@ -309,6 +319,7 @@ class BridgingPelayananController extends Controller
                     'no_rawat' => '2026/07/15/000001',
                     'norm' => '000145',
                     'pasien' => 'SITI AMINAH',
+                    'no_peserta' => '-',
                     'poli' => 'POLI UMUM',
                     'reg_tanggal' => '2026-07-15',
                     'reg_jam' => '07:12:08',
@@ -330,10 +341,13 @@ class BridgingPelayananController extends Controller
                 'no_rawat' => '2026/07/15/000001',
                 'norm' => '000145',
                 'pasien' => 'SITI AMINAH',
+                'no_peserta' => '-',
                 'poli' => 'POLI UMUM',
                 'reg_tanggal' => '2026-07-15',
                 'reg_jam' => '07:12:08',
+                'nomor_pendaftaran' => '-',
                 'pcare_daftar' => '2026-07-15',
+                'nomor_kunjungan' => '-',
                 'pcare_kunjungan' => '2026-07-15',
                 'status' => 'Same Day',
                 'warna' => 'emerald',
@@ -343,10 +357,13 @@ class BridgingPelayananController extends Controller
                 'no_rawat' => '2026/07/15/000014',
                 'norm' => '000233',
                 'pasien' => 'BUDI SETIAWAN',
+                'no_peserta' => '-',
                 'poli' => 'POLI GIGI',
                 'reg_tanggal' => '2026-07-15',
                 'reg_jam' => '09:24:51',
+                'nomor_pendaftaran' => '-',
                 'pcare_daftar' => '2026-07-15',
+                'nomor_kunjungan' => '-',
                 'pcare_kunjungan' => '2026-07-16',
                 'status' => 'Kunjungan H+1',
                 'warna' => 'amber',
@@ -356,10 +373,13 @@ class BridgingPelayananController extends Controller
                 'no_rawat' => '2026/07/15/000029',
                 'norm' => '000981',
                 'pasien' => 'RINA KARTIKA',
+                'no_peserta' => '-',
                 'poli' => 'POLI UMUM',
                 'reg_tanggal' => '2026-07-15',
                 'reg_jam' => '10:48:10',
+                'nomor_pendaftaran' => '-',
                 'pcare_daftar' => null,
+                'nomor_kunjungan' => '-',
                 'pcare_kunjungan' => null,
                 'status' => 'Belum Bridging',
                 'warna' => 'rose',

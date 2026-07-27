@@ -33,6 +33,25 @@
 }
 
 @layer components {
+    main {
+        transition: opacity 140ms ease, transform 140ms ease;
+    }
+
+    main.content-navigation-leaving {
+        pointer-events: none;
+        opacity: 0.55;
+        transform: translateY(2px);
+    }
+
+    main.content-navigation-entering {
+        opacity: 0;
+        transform: translateY(3px);
+    }
+
+    aside nav a.sidebar-current-link:not([target='_blank']) {
+        color: #fff;
+    }
+
     @media (min-width: 1024px) {
         body:has(> div > aside) {
             height: 100dvh;
