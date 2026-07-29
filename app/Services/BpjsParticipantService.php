@@ -75,6 +75,24 @@ class BpjsParticipantService
         $active = is_bool($activeValue) ? $activeValue : in_array(mb_strtolower(trim((string) $activeValue)), ['1', 'true', 'aktif', 'active'], true);
         $gender = mb_strtoupper(trim((string) ($participant['sex'] ?? $participant['jenisKelamin'] ?? '')));
         $gender = in_array($gender, ['P', 'PEREMPUAN', 'WANITA'], true) ? 'P' : 'L';
+        $fktpName = $this->firstValue([
+            data_get($participant, 'kdProviderPst.nmProvider'),
+            data_get($participant, 'kdProviderPst.namaProvider'),
+            data_get($participant, 'providerPst.nmProvider'),
+            data_get($participant, 'providerPst.namaProvider'),
+            data_get($participant, 'faskes.nmProvider'),
+            data_get($participant, 'faskes.nama'),
+            $participant['namaFaskes'] ?? null,
+        ]);
+        $fktpCode = $this->firstValue([
+            data_get($participant, 'kdProviderPst.kdProvider'),
+            data_get($participant, 'kdProviderPst.kodeProvider'),
+            data_get($participant, 'providerPst.kdProvider'),
+            data_get($participant, 'providerPst.kodeProvider'),
+            data_get($participant, 'faskes.kdProvider'),
+            data_get($participant, 'faskes.kode'),
+            $participant['kodeFaskes'] ?? null,
+        ]);
 
         return [
             'nik' => $nik,
@@ -84,9 +102,22 @@ class BpjsParticipantService
             'tanggal_lahir' => $this->date((string) ($participant['tglLahir'] ?? '')),
             'no_hp' => trim((string) ($participant['noHP'] ?? $participant['noTelepon'] ?? '')),
             'alamat' => trim((string) ($participant['alamat'] ?? '')),
+            'fktp_nama' => $fktpName,
+            'fktp_kode' => $fktpCode,
             'aktif' => $active,
             'status' => trim((string) (data_get($participant, 'statusPeserta.keterangan') ?? ($active ? 'AKTIF' : 'TIDAK AKTIF'))),
         ];
+    }
+
+    private function firstValue(array $values): string
+    {
+        foreach ($values as $value) {
+            if (is_scalar($value) && trim((string) $value) !== '' && trim((string) $value) !== '-') {
+                return trim((string) $value);
+            }
+        }
+
+        return '';
     }
 
     private function date(string $value): ?string
