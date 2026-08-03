@@ -7,6 +7,19 @@
     <title>Login - Bridging Monitor</title>
     @fonts
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+    <style>
+        /* Keep the login composition full-screen while presenting it at 80% scale. */
+        .login-canvas {
+            width: 125%;
+            min-height: 125vh;
+            transform: scale(.8);
+            transform-origin: top left;
+        }
+
+        .login-canvas > section {
+            min-height: 125vh;
+        }
+    </style>
 </head>
 <body class="min-h-screen bg-[#061426] font-sans text-slate-900 antialiased">
     <main class="relative min-h-screen overflow-hidden">
@@ -16,7 +29,7 @@
             <div class="absolute inset-0 opacity-[0.045]" style="background-image:linear-gradient(rgba(255,255,255,.6) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.6) 1px,transparent 1px);background-size:48px 48px"></div>
         </div>
 
-        <div class="relative mx-auto grid min-h-screen w-full max-w-[1500px] lg:grid-cols-[1.08fr_.92fr]">
+        <div class="login-canvas relative grid lg:grid-cols-[1.08fr_.92fr]">
             <section class="hidden min-h-screen flex-col justify-between px-12 py-10 text-white lg:flex xl:px-20 xl:py-14">
                 <div class="flex items-center gap-3">
                     <div class="flex h-11 w-11 items-center justify-center rounded-2xl border border-cyan-300/20 bg-cyan-300/10 text-cyan-300 shadow-lg shadow-cyan-950/20">
