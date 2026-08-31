@@ -37,7 +37,8 @@ class KioskController extends Controller
             $installation = $this->active->resolve();
             $this->active->configureClinicDatabase($installation);
             $participant = $this->participants->lookup($installation, $data['jenis'], $data['nomor']);
-            $patient = $participant['noka'] !== '' ? DB::connection('clinic')->table('pasien')->where('no_peserta', $participant['noka'])->first() : null;
+            $patient = $this->findPatientByParticipant($participant);
+            if ($patient) $patient = $this->fillMissingParticipantCard($patient, $participant);
             if ($patient && $participant['aktif']) $request->session()->put('kiosk_verified_rm', $patient->no_rkm_medis);
 
             return response()->json([
@@ -75,8 +76,8 @@ class KioskController extends Controller
             if ((int) ($tokenData['clinic_id'] ?? 0) !== (int) $installation->clinic_id) throw new RuntimeException('Klinik pada sesi verifikasi tidak sesuai.');
             $this->active->configureClinicDatabase($installation);
             $patient = DB::connection('clinic')->transaction(function () use ($participant, $data) {
-                $existing = DB::connection('clinic')->table('pasien')->where('no_peserta', $participant['noka'])->lockForUpdate()->first();
-                if ($existing) return $existing;
+                $existing = $this->findPatientByParticipant($participant, true);
+                if ($existing) return $this->fillMissingParticipantCard($existing, $participant);
 
                 $region = [
                     'kd_prop' => $this->masterId('propinsi', 'kd_prop', 'nm_prop', $data['province_name']),
@@ -174,6 +175,45 @@ class KioskController extends Controller
     private function patient(object $patient): array
     {
         return ['no_rkm_medis' => $patient->no_rkm_medis, 'nama' => $patient->nm_pasien, 'nik' => $patient->no_ktp, 'noka' => $patient->no_peserta, 'jenis_kelamin' => $patient->jk, 'tanggal_lahir' => $patient->tgl_lahir, 'no_hp' => $patient->no_tlp, 'alamat' => $patient->alamat];
+    }
+
+    private function findPatientByParticipant(array $participant, bool $lockForUpdate = false): ?object
+    {
+        $card = trim((string) ($participant['noka'] ?? ''));
+        $nik = trim((string) ($participant['nik'] ?? ''));
+        if ($card === '' && $nik === '') return null;
+
+        $query = DB::connection('clinic')->table('pasien')->where(function ($query) use ($card, $nik) {
+            if ($card !== '') $query->where('no_peserta', $card);
+            if ($nik !== '') {
+                $card !== ''
+                    ? $query->orWhere('no_ktp', $nik)
+                    : $query->where('no_ktp', $nik);
+            }
+        });
+
+        if ($card !== '') $query->orderByRaw('CASE WHEN no_peserta = ? THEN 0 ELSE 1 END', [$card]);
+        if ($lockForUpdate) $query->lockForUpdate();
+
+        return $query->first();
+    }
+
+    private function fillMissingParticipantCard(object $patient, array $participant): object
+    {
+        $card = trim((string) ($participant['noka'] ?? ''));
+        $currentCard = trim((string) ($patient->no_peserta ?? ''));
+        if ($card === '' || !in_array($currentCard, ['', '-'], true)) return $patient;
+
+        $updated = DB::connection('clinic')->table('pasien')
+            ->where('no_rkm_medis', $patient->no_rkm_medis)
+            ->where(function ($query) {
+                $query->whereNull('no_peserta')->orWhereIn('no_peserta', ['', '-']);
+            })
+            ->update(['no_peserta' => $card]);
+
+        if ($updated) $patient->no_peserta = $card;
+
+        return $patient;
     }
 
     private function masterId(string $table, string $id, string $name, string $value): int
