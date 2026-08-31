@@ -38,7 +38,7 @@ class KioskController extends Controller
             $this->active->configureClinicDatabase($installation);
             $participant = $this->participants->lookup($installation, $data['jenis'], $data['nomor']);
             $patient = $this->findPatientByParticipant($participant);
-            if ($patient) $patient = $this->fillMissingParticipantCard($patient, $participant);
+            if ($patient) $patient = $this->fillMissingParticipantIdentifiers($patient, $participant);
             if ($patient && $participant['aktif']) $request->session()->put('kiosk_verified_rm', $patient->no_rkm_medis);
 
             return response()->json([
@@ -77,7 +77,7 @@ class KioskController extends Controller
             $this->active->configureClinicDatabase($installation);
             $patient = DB::connection('clinic')->transaction(function () use ($participant, $data) {
                 $existing = $this->findPatientByParticipant($participant, true);
-                if ($existing) return $this->fillMissingParticipantCard($existing, $participant);
+                if ($existing) return $this->fillMissingParticipantIdentifiers($existing, $participant);
 
                 $region = [
                     'kd_prop' => $this->masterId('propinsi', 'kd_prop', 'nm_prop', $data['province_name']),
@@ -198,20 +198,26 @@ class KioskController extends Controller
         return $query->first();
     }
 
-    private function fillMissingParticipantCard(object $patient, array $participant): object
+    private function fillMissingParticipantIdentifiers(object $patient, array $participant): object
     {
-        $card = trim((string) ($participant['noka'] ?? ''));
-        $currentCard = trim((string) ($patient->no_peserta ?? ''));
-        if ($card === '' || !in_array($currentCard, ['', '-'], true)) return $patient;
+        $identifiers = [
+            'no_peserta' => trim((string) ($participant['noka'] ?? '')),
+            'no_ktp' => trim((string) ($participant['nik'] ?? '')),
+        ];
 
-        $updated = DB::connection('clinic')->table('pasien')
-            ->where('no_rkm_medis', $patient->no_rkm_medis)
-            ->where(function ($query) {
-                $query->whereNull('no_peserta')->orWhereIn('no_peserta', ['', '-']);
-            })
-            ->update(['no_peserta' => $card]);
+        foreach ($identifiers as $column => $value) {
+            $currentValue = trim((string) ($patient->{$column} ?? ''));
+            if ($value === '' || !in_array($currentValue, ['', '-'], true)) continue;
 
-        if ($updated) $patient->no_peserta = $card;
+            $updated = DB::connection('clinic')->table('pasien')
+                ->where('no_rkm_medis', $patient->no_rkm_medis)
+                ->where(function ($query) use ($column) {
+                    $query->whereNull($column)->orWhereIn($column, ['', '-']);
+                })
+                ->update([$column => $value]);
+
+            if ($updated) $patient->{$column} = $value;
+        }
 
         return $patient;
     }
