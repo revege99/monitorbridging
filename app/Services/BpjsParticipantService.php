@@ -104,6 +104,19 @@ class BpjsParticipantService
             'alamat' => trim((string) ($participant['alamat'] ?? '')),
             'fktp_nama' => $fktpName,
             'fktp_kode' => $fktpCode,
+            'peserta_prolanis' => $this->optionalValue([
+                $participant['pstProl'] ?? null,
+                $participant['kelompokProlanis'] ?? null,
+                $participant['pesertaProlanis'] ?? null,
+                $participant['prolanis'] ?? null,
+            ]),
+            'peserta_prb' => $this->optionalValue([
+                $participant['pstPrb'] ?? null,
+                $participant['programPRB'] ?? null,
+                $participant['programPrb'] ?? null,
+                $participant['pesertaPRB'] ?? null,
+                $participant['prb'] ?? null,
+            ]),
             'aktif' => $active,
             'status' => trim((string) (data_get($participant, 'statusPeserta.keterangan') ?? ($active ? 'AKTIF' : 'TIDAK AKTIF'))),
         ];
@@ -118,6 +131,17 @@ class BpjsParticipantService
         }
 
         return '';
+    }
+
+    private function optionalValue(array $values): ?string
+    {
+        foreach ($values as $value) {
+            if (!is_scalar($value)) continue;
+            $normalized = trim((string) $value);
+            if ($normalized !== '' && $normalized !== '-' && mb_strtolower($normalized) !== 'null') return $normalized;
+        }
+
+        return null;
     }
 
     private function date(string $value): ?string

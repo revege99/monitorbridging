@@ -29,17 +29,23 @@ class KioskController extends Controller
     {
         $numberRules = $request->input('jenis') === 'nik' ? ['digits:16'] : ['digits:13'];
         $data = $request->validate([
+            'mode' => ['required', Rule::in(['scheduled', 'online'])],
             'jenis' => ['required', Rule::in(['nik', 'noka'])],
             'nomor' => ['required', 'numeric', ...$numberRules],
         ]);
 
         try {
+            $request->session()->forget(['kiosk_verified_rm', 'kiosk_verified_participant', 'kiosk_service_mode']);
             $installation = $this->active->resolve();
             $this->active->configureClinicDatabase($installation);
             $participant = $this->participants->lookup($installation, $data['jenis'], $data['nomor']);
+            $request->session()->put('kiosk_service_mode', $data['mode']);
             $patient = $this->findPatientByParticipant($participant);
             if ($patient) $patient = $this->fillMissingParticipantIdentifiers($patient, $participant);
-            if ($patient && $participant['aktif']) $request->session()->put('kiosk_verified_rm', $patient->no_rkm_medis);
+            if ($patient && $participant['aktif']) {
+                $request->session()->put('kiosk_verified_rm', $patient->no_rkm_medis);
+                $request->session()->put('kiosk_verified_participant', $participant);
+            }
 
             return response()->json([
                 'status' => true,
@@ -47,7 +53,7 @@ class KioskController extends Controller
                 'participant_token' => Crypt::encryptString(json_encode(['participant' => $participant, 'issued_at' => now()->timestamp, 'clinic_id' => $installation->clinic_id], JSON_UNESCAPED_UNICODE)),
                 'patient' => $patient ? $this->patient($patient) : null,
                 'suggested_rm' => !$patient && $participant['aktif'] ? $this->nextMedicalRecord() : null,
-                'schedules' => $participant['aktif'] ? $this->schedules() : [],
+                'selection' => $participant['aktif'] ? $this->selectionOptions($data['mode']) : $this->emptySelection($data['mode']),
             ]);
         } catch (\Throwable $e) {
             report($e);
@@ -113,7 +119,9 @@ class KioskController extends Controller
             });
 
             $request->session()->put('kiosk_verified_rm', $patient->no_rkm_medis);
-            return response()->json(['status' => true, 'message' => 'Nomor rekam medis berhasil dibuat.', 'patient' => $this->patient($patient), 'schedules' => $this->schedules()]);
+            $request->session()->put('kiosk_verified_participant', $participant);
+            $mode = (string) $request->session()->get('kiosk_service_mode', 'scheduled');
+            return response()->json(['status' => true, 'message' => 'Nomor rekam medis berhasil dibuat.', 'patient' => $this->patient($patient), 'selection' => $this->selectionOptions($mode)]);
         } catch (\Throwable $e) {
             report($e);
             return response()->json(['status' => false, 'message' => $e->getMessage()], 422);
@@ -126,22 +134,31 @@ class KioskController extends Controller
 
         try {
             if ($request->session()->get('kiosk_verified_rm') !== $data['no_rkm_medis']) throw new RuntimeException('Pasien belum diverifikasi pada sesi Anjungan ini.');
+            $participant = $request->session()->get('kiosk_verified_participant');
+            if (!is_array($participant)) throw new RuntimeException('Data kepesertaan belum diverifikasi pada sesi Anjungan ini.');
+            $mode = (string) $request->session()->get('kiosk_service_mode');
+            if (!in_array($mode, ['scheduled', 'online'], true)) throw new RuntimeException('Jenis layanan Anjungan belum dipilih.');
             $installation = $this->active->resolve();
             $this->active->configureClinicDatabase($installation);
-            $result = DB::connection('clinic')->transaction(function () use ($data) {
+            $result = DB::connection('clinic')->transaction(function () use ($data, $participant, $mode) {
                 $patient = DB::connection('clinic')->table('pasien')->where('no_rkm_medis', $data['no_rkm_medis'])->lockForUpdate()->first();
                 if (!$patient) throw new RuntimeException('Data pasien tidak ditemukan.');
-                $schedule = $this->scheduleQuery()->where('j.kd_poli', $data['kd_poli'])->where('j.kd_dokter', $data['kd_dokter'])->first();
-                if (!$schedule) throw new RuntimeException('Jadwal dokter tidak tersedia hari ini.');
+                $service = $this->selectedService($mode, $data['kd_poli'], $data['kd_dokter']);
                 $today = now('Asia/Jakarta')->toDateString();
                 $existing = DB::connection('clinic')->table('reg_periksa')->where('no_rkm_medis', $patient->no_rkm_medis)->where('kd_poli', $data['kd_poli'])->whereDate('tgl_registrasi', $today)->first();
-                if ($existing) return ['existing' => true, 'no_rawat' => $existing->no_rawat, 'no_antrean' => $existing->no_reg];
+                if ($existing) {
+                    DB::connection('clinic')->table('reg_periksa')->where('no_rawat', $existing->no_rawat)->update([
+                        'peserta_prolanis' => $participant['peserta_prolanis'] ?? null,
+                        'peserta_prb' => $participant['peserta_prb'] ?? null,
+                    ]);
+                    return ['existing' => true, 'no_rawat' => $existing->no_rawat, 'no_antrean' => $existing->no_reg];
+                }
 
                 DB::connection('clinic')->table('reg_periksa')->lockForUpdate()->count();
                 $lastRawat = DB::connection('clinic')->table('reg_periksa')->whereDate('tgl_registrasi', $today)->orderByDesc('no_rawat')->value('no_rawat');
                 $sequence = $lastRawat ? ((int) substr($lastRawat, -6) + 1) : 1;
                 $noRawat = str_replace('-', '/', $today).'/'.str_pad((string) $sequence, 6, '0', STR_PAD_LEFT);
-                $prefix = $this->doctorPrefix($schedule->nm_dokter);
+                $prefix = $this->doctorPrefix($service->nm_dokter);
                 $lastQueue = DB::connection('clinic')->table('reg_periksa')->whereDate('tgl_registrasi', $today)->where('kd_dokter', $data['kd_dokter'])->orderByDesc('no_reg')->value('no_reg');
                 $queueSequence = $lastQueue ? ((int) substr($lastQueue, -3) + 1) : 1;
                 $noQueue = $prefix.'-'.str_pad((string) $queueSequence, 3, '0', STR_PAD_LEFT);
@@ -154,14 +171,15 @@ class KioskController extends Controller
                     'no_reg' => $noQueue, 'no_rawat' => $noRawat, 'tgl_registrasi' => $today, 'jam_reg' => now('Asia/Jakarta')->format('H:i:s'),
                     'kd_dokter' => $data['kd_dokter'], 'no_rkm_medis' => $patient->no_rkm_medis, 'kd_poli' => $data['kd_poli'],
                     'p_jawab' => $patient->nm_pasien, 'almt_pj' => $responsibleAddress, 'hubunganpj' => 'DIRI SENDIRI',
-                    'biaya_reg' => $oldPoli ? $schedule->registrasilama : $schedule->registrasi, 'stts' => 'Belum',
+                    'biaya_reg' => $oldPoli ? $service->registrasilama : $service->registrasi, 'stts' => 'Belum',
                     'stts_daftar' => $oldPatient ? 'Lama' : 'Baru', 'status_lanjut' => 'Ralan', 'kd_pj' => 'BPJ',
                     'umurdaftar' => $age, 'sttsumur' => 'Th', 'status_bayar' => 'Belum Bayar', 'status_poli' => $oldPoli ? 'Lama' : 'Baru',
+                    'peserta_prolanis' => $participant['peserta_prolanis'] ?? null, 'peserta_prb' => $participant['peserta_prb'] ?? null,
                 ]);
                 return ['existing' => false, 'no_rawat' => $noRawat, 'no_antrean' => $noQueue];
             });
 
-            $request->session()->forget('kiosk_verified_rm');
+            $request->session()->forget(['kiosk_verified_rm', 'kiosk_verified_participant', 'kiosk_service_mode']);
             return response()->json(['status' => true, 'message' => $result['existing'] ? 'Pasien sudah terdaftar di poli hari ini.' : 'Antrean berhasil diambil.', ...$result]);
         } catch (\Throwable $e) {
             report($e);
@@ -172,6 +190,42 @@ class KioskController extends Controller
     private function schedules(): array
     {
         return $this->scheduleQuery()->get()->groupBy('kd_poli')->map(fn ($rows) => ['kd_poli' => $rows->first()->kd_poli, 'nm_poli' => $rows->first()->nm_poli, 'doctors' => $rows->map(fn ($r) => ['kd_dokter' => $r->kd_dokter, 'nm_dokter' => $r->nm_dokter, 'jam_mulai' => substr($r->jam_mulai, 0, 5), 'jam_selesai' => substr($r->jam_selesai, 0, 5), 'kuota' => $r->kuota])->values()])->values()->all();
+    }
+
+    private function selectionOptions(string $mode): array
+    {
+        if ($mode === 'online') {
+            return [
+                'mode' => 'online',
+                'polis' => DB::connection('clinic')->table('poliklinik')->where('status', '1')
+                    ->select(['kd_poli', 'nm_poli'])->orderBy('nm_poli')->get()->map(fn ($row) => (array) $row)->all(),
+                'doctors' => DB::connection('clinic')->table('dokter')->where('status', '1')
+                    ->select(['kd_dokter', 'nm_dokter'])->orderBy('nm_dokter')->get()->map(fn ($row) => (array) $row)->all(),
+            ];
+        }
+
+        return ['mode' => 'scheduled', 'polis' => $this->schedules(), 'doctors' => []];
+    }
+
+    private function emptySelection(string $mode): array
+    {
+        return ['mode' => $mode, 'polis' => [], 'doctors' => []];
+    }
+
+    private function selectedService(string $mode, string $poliCode, string $doctorCode): object
+    {
+        if ($mode === 'online') {
+            $poli = DB::connection('clinic')->table('poliklinik')->where('kd_poli', $poliCode)->where('status', '1')->first(['registrasi', 'registrasilama']);
+            $doctor = DB::connection('clinic')->table('dokter')->where('kd_dokter', $doctorCode)->where('status', '1')->first(['nm_dokter']);
+            if (!$poli) throw new RuntimeException('Poliklinik tidak aktif atau tidak ditemukan.');
+            if (!$doctor) throw new RuntimeException('Dokter tidak aktif atau tidak ditemukan.');
+
+            return (object) ['registrasi' => $poli->registrasi, 'registrasilama' => $poli->registrasilama, 'nm_dokter' => $doctor->nm_dokter];
+        }
+
+        $schedule = $this->scheduleQuery()->where('j.kd_poli', $poliCode)->where('j.kd_dokter', $doctorCode)->first();
+        if (!$schedule) throw new RuntimeException('Jadwal dokter tidak tersedia hari ini.');
+        return $schedule;
     }
 
     private function scheduleQuery()
