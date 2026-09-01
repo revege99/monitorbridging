@@ -46,6 +46,7 @@ class KioskController extends Controller
                 'participant' => $participant,
                 'participant_token' => Crypt::encryptString(json_encode(['participant' => $participant, 'issued_at' => now()->timestamp, 'clinic_id' => $installation->clinic_id], JSON_UNESCAPED_UNICODE)),
                 'patient' => $patient ? $this->patient($patient) : null,
+                'suggested_rm' => !$patient && $participant['aktif'] ? $this->nextMedicalRecord() : null,
                 'schedules' => $participant['aktif'] ? $this->schedules() : [],
             ]);
         } catch (\Throwable $e) {
@@ -58,11 +59,15 @@ class KioskController extends Controller
     {
         $data = $request->validate([
             'participant_token' => ['required', 'string'],
+            'no_rkm_medis' => ['required', 'string', 'regex:/^[0-9]{2}-[0-9]{2}-[0-9]{2}$/'],
             'province_name' => ['required', 'string', 'max:30'],
             'regency_name' => ['required', 'string', 'max:60'],
             'district_name' => ['required', 'string', 'max:60'],
             'village_name' => ['required', 'string', 'max:60'],
             'alamat_detail' => ['required', 'string', 'max:180'],
+        ], [
+            'no_rkm_medis.required' => 'Nomor rekam medis wajib diisi.',
+            'no_rkm_medis.regex' => 'Format nomor rekam medis harus 00-00-00.',
         ]);
 
         try {
@@ -79,13 +84,16 @@ class KioskController extends Controller
                 $existing = $this->findPatientByParticipant($participant, true);
                 if ($existing) return $this->fillMissingParticipantIdentifiers($existing, $participant);
 
+                $rm = $data['no_rkm_medis'];
+                $rmExists = DB::connection('clinic')->table('pasien')->where('no_rkm_medis', $rm)->lockForUpdate()->exists();
+                if ($rmExists) throw new RuntimeException("Nomor rekam medis {$rm} sudah digunakan. Silakan gunakan nomor lain.");
+
                 $region = [
                     'kd_prop' => $this->masterId('propinsi', 'kd_prop', 'nm_prop', $data['province_name']),
                     'kd_kab' => $this->masterId('kabupaten', 'kd_kab', 'nm_kab', $data['regency_name']),
                     'kd_kec' => $this->masterId('kecamatan', 'kd_kec', 'nm_kec', $data['district_name']),
                     'kd_kel' => $this->masterId('kelurahan', 'kd_kel', 'nm_kel', $data['village_name']),
                 ];
-                $rm = $this->nextMedicalRecord();
                 $birth = CarbonImmutable::parse($participant['tanggal_lahir']);
                 $age = $birth->diff(now('Asia/Jakarta'));
 
