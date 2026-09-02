@@ -147,10 +147,7 @@ class KioskController extends Controller
                 $today = now('Asia/Jakarta')->toDateString();
                 $existing = DB::connection('clinic')->table('reg_periksa')->where('no_rkm_medis', $patient->no_rkm_medis)->where('kd_poli', $data['kd_poli'])->whereDate('tgl_registrasi', $today)->first();
                 if ($existing) {
-                    DB::connection('clinic')->table('reg_periksa')->where('no_rawat', $existing->no_rawat)->update([
-                        'peserta_prolanis' => $participant['peserta_prolanis'] ?? null,
-                        'peserta_prb' => $participant['peserta_prb'] ?? null,
-                    ]);
+                    $this->saveRegistrationPrograms($existing->no_rawat, $participant);
                     return ['existing' => true, 'no_rawat' => $existing->no_rawat, 'no_antrean' => $existing->no_reg];
                 }
 
@@ -174,8 +171,8 @@ class KioskController extends Controller
                     'biaya_reg' => $oldPoli ? $service->registrasilama : $service->registrasi, 'stts' => 'Belum',
                     'stts_daftar' => $oldPatient ? 'Lama' : 'Baru', 'status_lanjut' => 'Ralan', 'kd_pj' => 'BPJ',
                     'umurdaftar' => $age, 'sttsumur' => 'Th', 'status_bayar' => 'Belum Bayar', 'status_poli' => $oldPoli ? 'Lama' : 'Baru',
-                    'peserta_prolanis' => $participant['peserta_prolanis'] ?? null, 'peserta_prb' => $participant['peserta_prb'] ?? null,
                 ]);
+                $this->saveRegistrationPrograms($noRawat, $participant);
                 return ['existing' => false, 'no_rawat' => $noRawat, 'no_antrean' => $noQueue];
             });
 
@@ -237,6 +234,17 @@ class KioskController extends Controller
     private function patient(object $patient): array
     {
         return ['no_rkm_medis' => $patient->no_rkm_medis, 'nama' => $patient->nm_pasien, 'nik' => $patient->no_ktp, 'noka' => $patient->no_peserta, 'jenis_kelamin' => $patient->jk, 'tanggal_lahir' => $patient->tgl_lahir, 'no_hp' => $patient->no_tlp, 'alamat' => $patient->alamat];
+    }
+
+    private function saveRegistrationPrograms(string $careNumber, array $participant): void
+    {
+        DB::connection('clinic')->table('registrasi_prolanis')->updateOrInsert(
+            ['no_rawat' => $careNumber],
+            [
+                'peserta_prolanis' => $participant['peserta_prolanis'] ?? null,
+                'peserta_prb' => $participant['peserta_prb'] ?? null,
+            ]
+        );
     }
 
     private function findPatientByParticipant(array $participant, bool $lockForUpdate = false): ?object
