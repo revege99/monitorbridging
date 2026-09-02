@@ -167,7 +167,7 @@ class KioskController extends Controller
                     'registration' => $result['response'],
                     'payload' => $result['payload'],
                     ...$localRegistration,
-                    'debug' => config('app.debug') ? $onlineDebug : null,
+                    'debug' => $onlineDebug,
                 ]);
             }
 
@@ -178,7 +178,7 @@ class KioskController extends Controller
             return response()->json(['status' => true, 'message' => $result['existing'] ? 'Pasien sudah terdaftar di poli hari ini.' : 'Antrean berhasil diambil.', ...$result]);
         } catch (\Throwable $e) {
             report($e);
-            return response()->json(['status' => false, 'message' => $e->getMessage(), 'debug' => config('app.debug') ? $onlineDebug : null], 422);
+            return response()->json(['status' => false, 'message' => $e->getMessage(), 'debug' => $mode === 'online' ? $onlineDebug : null], 422);
         }
     }
 

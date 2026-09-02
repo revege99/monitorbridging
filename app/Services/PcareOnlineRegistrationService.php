@@ -51,9 +51,7 @@ class PcareOnlineRegistrationService
             'user_key' => $bpjs->user_key_pcare,
         ];
 
-        if (config('app.debug')) {
-            $requestDebug = ['method' => 'POST', 'url' => $url, 'headers' => $headers, 'payload' => $payload];
-        }
+        $requestDebug = ['method' => 'POST', 'url' => $url, 'headers' => $headers, 'payload' => $payload];
 
         try {
             $response = Http::timeout(30)->withHeaders([
@@ -65,7 +63,7 @@ class PcareOnlineRegistrationService
 
         $json = $response->json();
 
-        if (config('app.debug') && $requestDebug !== null) {
+        if ($requestDebug !== null) {
             $requestDebug['response'] = [
                 'http_status' => $response->status(),
                 'body' => is_array($json) ? $json : $response->body(),
