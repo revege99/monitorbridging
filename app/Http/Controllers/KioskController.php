@@ -149,52 +149,30 @@ class KioskController extends Controller
             $this->active->configureClinicDatabase($installation);
 
             if ($mode === 'online') {
+                // Pastikan tujuan registrasi lokal valid sebelum mengirim ke BPJS,
+                // tetapi jangan menulis apa pun sampai BPJS menyatakan sukses.
+                $service = $this->onlineService();
                 $result = $onlineRegistrations->register($installation, (string) ($participant['noka'] ?? ''), $onlineDebug);
+                $localRegistration = $this->saveLocalRegistration(
+                    $data['no_rkm_medis'],
+                    $service->kd_poli,
+                    $service->kd_dokter,
+                    $service,
+                    $participant
+                );
                 $request->session()->forget(['kiosk_verified_rm', 'kiosk_verified_participant', 'kiosk_service_mode']);
                 return response()->json([
                     'status' => true,
                     'message' => (string) data_get($result, 'metadata.message', 'Pendaftaran kunjungan online berhasil.'),
                     'registration' => $result['response'],
                     'payload' => $result['payload'],
+                    ...$localRegistration,
                     'debug' => config('app.debug') ? $onlineDebug : null,
                 ]);
             }
 
-            $result = DB::connection('clinic')->transaction(function () use ($data, $participant) {
-                $patient = DB::connection('clinic')->table('pasien')->where('no_rkm_medis', $data['no_rkm_medis'])->lockForUpdate()->first();
-                if (!$patient) throw new RuntimeException('Data pasien tidak ditemukan.');
-                $service = $this->selectedService($data['kd_poli'], $data['kd_dokter']);
-                $today = now('Asia/Jakarta')->toDateString();
-                $existing = DB::connection('clinic')->table('reg_periksa')->where('no_rkm_medis', $patient->no_rkm_medis)->where('kd_poli', $data['kd_poli'])->whereDate('tgl_registrasi', $today)->first();
-                if ($existing) {
-                    $this->saveRegistrationPrograms($existing->no_rawat, $participant);
-                    return ['existing' => true, 'no_rawat' => $existing->no_rawat, 'no_antrean' => $existing->no_reg];
-                }
-
-                DB::connection('clinic')->table('reg_periksa')->lockForUpdate()->count();
-                $lastRawat = DB::connection('clinic')->table('reg_periksa')->whereDate('tgl_registrasi', $today)->orderByDesc('no_rawat')->value('no_rawat');
-                $sequence = $lastRawat ? ((int) substr($lastRawat, -6) + 1) : 1;
-                $noRawat = str_replace('-', '/', $today).'/'.str_pad((string) $sequence, 6, '0', STR_PAD_LEFT);
-                $prefix = $this->doctorPrefix($service->nm_dokter);
-                $lastQueue = DB::connection('clinic')->table('reg_periksa')->whereDate('tgl_registrasi', $today)->where('kd_dokter', $data['kd_dokter'])->orderByDesc('no_reg')->value('no_reg');
-                $queueSequence = $lastQueue ? ((int) substr($lastQueue, -3) + 1) : 1;
-                $noQueue = $prefix.'-'.str_pad((string) $queueSequence, 3, '0', STR_PAD_LEFT);
-                $oldPatient = DB::connection('clinic')->table('reg_periksa')->where('no_rkm_medis', $patient->no_rkm_medis)->exists();
-                $oldPoli = DB::connection('clinic')->table('reg_periksa')->where('no_rkm_medis', $patient->no_rkm_medis)->where('kd_poli', $data['kd_poli'])->exists();
-                $age = CarbonImmutable::parse($patient->tgl_lahir)->diffInYears(now('Asia/Jakarta'));
-                $responsibleAddress = $this->responsibleAddress($patient);
-
-                DB::connection('clinic')->table('reg_periksa')->insert([
-                    'no_reg' => $noQueue, 'no_rawat' => $noRawat, 'tgl_registrasi' => $today, 'jam_reg' => now('Asia/Jakarta')->format('H:i:s'),
-                    'kd_dokter' => $data['kd_dokter'], 'no_rkm_medis' => $patient->no_rkm_medis, 'kd_poli' => $data['kd_poli'],
-                    'p_jawab' => $patient->nm_pasien, 'almt_pj' => $responsibleAddress, 'hubunganpj' => 'DIRI SENDIRI',
-                    'biaya_reg' => $oldPoli ? $service->registrasilama : $service->registrasi, 'stts' => 'Belum',
-                    'stts_daftar' => $oldPatient ? 'Lama' : 'Baru', 'status_lanjut' => 'Ralan', 'kd_pj' => 'BPJ',
-                    'umurdaftar' => $age, 'sttsumur' => 'Th', 'status_bayar' => 'Belum Bayar', 'status_poli' => $oldPoli ? 'Lama' : 'Baru',
-                ]);
-                $this->saveRegistrationPrograms($noRawat, $participant);
-                return ['existing' => false, 'no_rawat' => $noRawat, 'no_antrean' => $noQueue];
-            });
+            $service = $this->selectedService($data['kd_poli'], $data['kd_dokter']);
+            $result = $this->saveLocalRegistration($data['no_rkm_medis'], $data['kd_poli'], $data['kd_dokter'], $service, $participant);
 
             $request->session()->forget(['kiosk_verified_rm', 'kiosk_verified_participant', 'kiosk_service_mode']);
             return response()->json(['status' => true, 'message' => $result['existing'] ? 'Pasien sudah terdaftar di poli hari ini.' : 'Antrean berhasil diambil.', ...$result]);
@@ -228,6 +206,59 @@ class KioskController extends Controller
         $schedule = $this->scheduleQuery()->where('j.kd_poli', $poliCode)->where('j.kd_dokter', $doctorCode)->first();
         if (!$schedule) throw new RuntimeException('Jadwal dokter tidak tersedia hari ini.');
         return $schedule;
+    }
+
+    private function onlineService(): object
+    {
+        $service = $this->scheduleQuery()
+            ->join('maping_poliklinik_pcare as mpp', 'mpp.kd_poli_rs', '=', 'j.kd_poli')
+            ->where('mpp.kd_poli_pcare', '999')
+            ->first();
+
+        if (!$service) {
+            throw new RuntimeException('Poli PCare 999 belum dipetakan ke poli lokal dengan dokter aktif yang terjadwal hari ini.');
+        }
+
+        return $service;
+    }
+
+    private function saveLocalRegistration(string $medicalRecord, string $poliCode, string $doctorCode, object $service, array $participant): array
+    {
+        return DB::connection('clinic')->transaction(function () use ($medicalRecord, $poliCode, $doctorCode, $service, $participant) {
+            $patient = DB::connection('clinic')->table('pasien')->where('no_rkm_medis', $medicalRecord)->lockForUpdate()->first();
+            if (!$patient) throw new RuntimeException('Data pasien tidak ditemukan.');
+
+            $today = now('Asia/Jakarta')->toDateString();
+            $existing = DB::connection('clinic')->table('reg_periksa')->where('no_rkm_medis', $patient->no_rkm_medis)->where('kd_poli', $poliCode)->whereDate('tgl_registrasi', $today)->first();
+            if ($existing) {
+                $this->saveRegistrationPrograms($existing->no_rawat, $participant);
+                return ['existing' => true, 'no_rawat' => $existing->no_rawat, 'no_antrean' => $existing->no_reg];
+            }
+
+            DB::connection('clinic')->table('reg_periksa')->lockForUpdate()->count();
+            $lastRawat = DB::connection('clinic')->table('reg_periksa')->whereDate('tgl_registrasi', $today)->orderByDesc('no_rawat')->value('no_rawat');
+            $sequence = $lastRawat ? ((int) substr($lastRawat, -6) + 1) : 1;
+            $noRawat = str_replace('-', '/', $today).'/'.str_pad((string) $sequence, 6, '0', STR_PAD_LEFT);
+            $prefix = $this->doctorPrefix($service->nm_dokter);
+            $lastQueue = DB::connection('clinic')->table('reg_periksa')->whereDate('tgl_registrasi', $today)->where('kd_dokter', $doctorCode)->orderByDesc('no_reg')->value('no_reg');
+            $queueSequence = $lastQueue ? ((int) substr($lastQueue, -3) + 1) : 1;
+            $noQueue = $prefix.'-'.str_pad((string) $queueSequence, 3, '0', STR_PAD_LEFT);
+            $oldPatient = DB::connection('clinic')->table('reg_periksa')->where('no_rkm_medis', $patient->no_rkm_medis)->exists();
+            $oldPoli = DB::connection('clinic')->table('reg_periksa')->where('no_rkm_medis', $patient->no_rkm_medis)->where('kd_poli', $poliCode)->exists();
+            $age = CarbonImmutable::parse($patient->tgl_lahir)->diffInYears(now('Asia/Jakarta'));
+
+            DB::connection('clinic')->table('reg_periksa')->insert([
+                'no_reg' => $noQueue, 'no_rawat' => $noRawat, 'tgl_registrasi' => $today, 'jam_reg' => now('Asia/Jakarta')->format('H:i:s'),
+                'kd_dokter' => $doctorCode, 'no_rkm_medis' => $patient->no_rkm_medis, 'kd_poli' => $poliCode,
+                'p_jawab' => $patient->nm_pasien, 'almt_pj' => $this->responsibleAddress($patient), 'hubunganpj' => 'DIRI SENDIRI',
+                'biaya_reg' => $oldPoli ? $service->registrasilama : $service->registrasi, 'stts' => 'Belum',
+                'stts_daftar' => $oldPatient ? 'Lama' : 'Baru', 'status_lanjut' => 'Ralan', 'kd_pj' => 'BPJ',
+                'umurdaftar' => $age, 'sttsumur' => 'Th', 'status_bayar' => 'Belum Bayar', 'status_poli' => $oldPoli ? 'Lama' : 'Baru',
+            ]);
+            $this->saveRegistrationPrograms($noRawat, $participant);
+
+            return ['existing' => false, 'no_rawat' => $noRawat, 'no_antrean' => $noQueue];
+        });
     }
 
     private function scheduleQuery()

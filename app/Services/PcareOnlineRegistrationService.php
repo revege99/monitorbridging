@@ -63,8 +63,30 @@ class PcareOnlineRegistrationService
             throw new RuntimeException('Gagal menghubungi layanan pendaftaran PCare.', 0, $e);
         }
 
-        if (!$response->successful()) throw new RuntimeException('Layanan pendaftaran PCare mengembalikan HTTP '.$response->status().'.');
         $json = $response->json();
+
+        if (config('app.debug') && $requestDebug !== null) {
+            $requestDebug['response'] = [
+                'http_status' => $response->status(),
+                'body' => is_array($json) ? $json : $response->body(),
+            ];
+        }
+
+        if (!$response->successful()) {
+            $message = is_array($json)
+                ? (string) (data_get($json, 'metaData.message') ?? data_get($json, 'metadata.message') ?? '')
+                : '';
+
+            if ($message === '') {
+                $message = trim((string) preg_replace('/\s+/', ' ', strip_tags($response->body())));
+                if ($message !== '') $message = mb_strimwidth($message, 0, 500, '...');
+            }
+
+            throw new RuntimeException(
+                'Pendaftaran PCare ditolak (HTTP '.$response->status().'): '.($message !== '' ? $message : 'BPJS tidak memberikan keterangan.')
+            );
+        }
+
         if (!is_array($json)) throw new RuntimeException('Respons pendaftaran PCare tidak valid.');
 
         $metadata = $json['metaData'] ?? $json['metadata'] ?? null;
