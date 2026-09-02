@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Services\ActiveInstallation;
 use App\Services\BpjsParticipantService;
+use App\Services\PcareOnlineRegistrationService;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -128,22 +129,41 @@ class KioskController extends Controller
         }
     }
 
-    public function register(Request $request): JsonResponse
+    public function register(Request $request, PcareOnlineRegistrationService $onlineRegistrations): JsonResponse
     {
-        $data = $request->validate(['no_rkm_medis' => ['required', 'string', 'max:15'], 'kd_poli' => ['required', 'string', 'max:5'], 'kd_dokter' => ['required', 'string', 'max:20']]);
+        $mode = (string) $request->session()->get('kiosk_service_mode');
+        $rules = ['no_rkm_medis' => ['required', 'string', 'max:15']];
+        if ($mode === 'scheduled') {
+            $rules['kd_poli'] = ['required', 'string', 'max:5'];
+            $rules['kd_dokter'] = ['required', 'string', 'max:20'];
+        }
+        $data = $request->validate($rules);
+        $onlineDebug = null;
 
         try {
             if ($request->session()->get('kiosk_verified_rm') !== $data['no_rkm_medis']) throw new RuntimeException('Pasien belum diverifikasi pada sesi Anjungan ini.');
             $participant = $request->session()->get('kiosk_verified_participant');
             if (!is_array($participant)) throw new RuntimeException('Data kepesertaan belum diverifikasi pada sesi Anjungan ini.');
-            $mode = (string) $request->session()->get('kiosk_service_mode');
             if (!in_array($mode, ['scheduled', 'online'], true)) throw new RuntimeException('Jenis layanan Anjungan belum dipilih.');
             $installation = $this->active->resolve();
             $this->active->configureClinicDatabase($installation);
-            $result = DB::connection('clinic')->transaction(function () use ($data, $participant, $mode) {
+
+            if ($mode === 'online') {
+                $result = $onlineRegistrations->register($installation, (string) ($participant['noka'] ?? ''), $onlineDebug);
+                $request->session()->forget(['kiosk_verified_rm', 'kiosk_verified_participant', 'kiosk_service_mode']);
+                return response()->json([
+                    'status' => true,
+                    'message' => (string) data_get($result, 'metadata.message', 'Pendaftaran kunjungan online berhasil.'),
+                    'registration' => $result['response'],
+                    'payload' => $result['payload'],
+                    'debug' => config('app.debug') ? $onlineDebug : null,
+                ]);
+            }
+
+            $result = DB::connection('clinic')->transaction(function () use ($data, $participant) {
                 $patient = DB::connection('clinic')->table('pasien')->where('no_rkm_medis', $data['no_rkm_medis'])->lockForUpdate()->first();
                 if (!$patient) throw new RuntimeException('Data pasien tidak ditemukan.');
-                $service = $this->selectedService($mode, $data['kd_poli'], $data['kd_dokter']);
+                $service = $this->selectedService($data['kd_poli'], $data['kd_dokter']);
                 $today = now('Asia/Jakarta')->toDateString();
                 $existing = DB::connection('clinic')->table('reg_periksa')->where('no_rkm_medis', $patient->no_rkm_medis)->where('kd_poli', $data['kd_poli'])->whereDate('tgl_registrasi', $today)->first();
                 if ($existing) {
@@ -180,7 +200,7 @@ class KioskController extends Controller
             return response()->json(['status' => true, 'message' => $result['existing'] ? 'Pasien sudah terdaftar di poli hari ini.' : 'Antrean berhasil diambil.', ...$result]);
         } catch (\Throwable $e) {
             report($e);
-            return response()->json(['status' => false, 'message' => $e->getMessage()], 422);
+            return response()->json(['status' => false, 'message' => $e->getMessage(), 'debug' => config('app.debug') ? $onlineDebug : null], 422);
         }
     }
 
@@ -192,13 +212,7 @@ class KioskController extends Controller
     private function selectionOptions(string $mode): array
     {
         if ($mode === 'online') {
-            return [
-                'mode' => 'online',
-                'polis' => DB::connection('clinic')->table('poliklinik')->where('status', '1')
-                    ->select(['kd_poli', 'nm_poli'])->orderBy('nm_poli')->get()->map(fn ($row) => (array) $row)->all(),
-                'doctors' => DB::connection('clinic')->table('dokter')->where('status', '1')
-                    ->select(['kd_dokter', 'nm_dokter'])->orderBy('nm_dokter')->get()->map(fn ($row) => (array) $row)->all(),
-            ];
+            return $this->emptySelection('online');
         }
 
         return ['mode' => 'scheduled', 'polis' => $this->schedules(), 'doctors' => []];
@@ -209,17 +223,8 @@ class KioskController extends Controller
         return ['mode' => $mode, 'polis' => [], 'doctors' => []];
     }
 
-    private function selectedService(string $mode, string $poliCode, string $doctorCode): object
+    private function selectedService(string $poliCode, string $doctorCode): object
     {
-        if ($mode === 'online') {
-            $poli = DB::connection('clinic')->table('poliklinik')->where('kd_poli', $poliCode)->where('status', '1')->first(['registrasi', 'registrasilama']);
-            $doctor = DB::connection('clinic')->table('dokter')->where('kd_dokter', $doctorCode)->where('status', '1')->first(['nm_dokter']);
-            if (!$poli) throw new RuntimeException('Poliklinik tidak aktif atau tidak ditemukan.');
-            if (!$doctor) throw new RuntimeException('Dokter tidak aktif atau tidak ditemukan.');
-
-            return (object) ['registrasi' => $poli->registrasi, 'registrasilama' => $poli->registrasilama, 'nm_dokter' => $doctor->nm_dokter];
-        }
-
         $schedule = $this->scheduleQuery()->where('j.kd_poli', $poliCode)->where('j.kd_dokter', $doctorCode)->first();
         if (!$schedule) throw new RuntimeException('Jadwal dokter tidak tersedia hari ini.');
         return $schedule;
@@ -277,12 +282,12 @@ class KioskController extends Controller
 
         foreach ($identifiers as $column => $value) {
             $currentValue = trim((string) ($patient->{$column} ?? ''));
-            if ($value === '' || !in_array($currentValue, ['', '-'], true)) continue;
+            if ($value === '' || !in_array($currentValue, ['', '-', '0'], true)) continue;
 
             $updated = DB::connection('clinic')->table('pasien')
                 ->where('no_rkm_medis', $patient->no_rkm_medis)
                 ->where(function ($query) use ($column) {
-                    $query->whereNull($column)->orWhereIn($column, ['', '-']);
+                    $query->whereNull($column)->orWhereIn($column, ['', '-', '0']);
                 })
                 ->update([$column => $value]);
 

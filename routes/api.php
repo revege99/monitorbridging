@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AntreanFktpCallController;
+use App\Http\Controllers\Api\PcareTaccController;
 use App\Http\Controllers\QueueDisplayController;
 use Illuminate\Support\Facades\Route;
 
@@ -14,6 +15,10 @@ Route::post('/integration/antrean-fktp/tidak-hadir', AntreanFktpCallController::
 
 Route::post('/integration/display/panggil', [QueueDisplayController::class, 'store'])
     ->name('api.integration.display.store');
+
+Route::post('/integration/pcare/tacc', PcareTaccController::class)
+    ->middleware('throttle:60,1')
+    ->name('api.integration.pcare.tacc');
 
 Route::get('/display/antrean/state', [QueueDisplayController::class, 'state'])
     ->middleware('throttle:180,1')
