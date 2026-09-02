@@ -11,19 +11,23 @@ use Throwable;
 
 class PcareOnlineRegistrationService
 {
-    public function register(InstallationSetting $installation, string $cardNumber, ?array &$requestDebug = null): array
+    public function register(InstallationSetting $installation, string $cardNumber, string $providerCode, string $pcarePoliCode, ?array &$requestDebug = null): array
     {
         $cardNumber = preg_replace('/\D/', '', $cardNumber);
         if (strlen($cardNumber) !== 13) throw new RuntimeException('Nomor kartu BPJS harus terdiri dari 13 digit.');
+        $providerCode = trim($providerCode);
+        $pcarePoliCode = trim($pcarePoliCode);
+        if ($providerCode === '') throw new RuntimeException('Kode provider peserta dari BPJS tidak tersedia.');
+        if ($pcarePoliCode === '') throw new RuntimeException('Kode poli PCare belum tersedia pada tabel mapping.');
 
         $bpjs = $installation->clinic->bpjsConfiguration;
         if (!$bpjs) throw new RuntimeException('Konfigurasi BPJS klinik belum tersedia.');
 
         $payload = [
-            'kdProviderPeserta' => '03730101',
+            'kdProviderPeserta' => $providerCode,
             'tglDaftar' => now('Asia/Jakarta')->format('d-m-Y'),
             'noKartu' => $cardNumber,
-            'kdPoli' => '999',
+            'kdPoli' => $pcarePoliCode,
             'keluhan' => 'kunjungan online',
             'kunjSakit' => false,
             'sistole' => 0,
@@ -89,7 +93,7 @@ class PcareOnlineRegistrationService
 
         $metadata = $json['metaData'] ?? $json['metadata'] ?? null;
         if (!is_array($metadata)) throw new RuntimeException('Metadata respons pendaftaran PCare tidak tersedia.');
-        if (!in_array((int) ($metadata['code'] ?? 0), [200, 201], true)) {
+        if ((int) ($metadata['code'] ?? 0) !== 201 || mb_strtoupper(trim((string) ($metadata['message'] ?? ''))) !== 'CREATED') {
             throw new RuntimeException((string) ($metadata['message'] ?? 'Pendaftaran PCare gagal.'));
         }
 

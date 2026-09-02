@@ -133,7 +133,7 @@ class KioskController extends Controller
     {
         $mode = (string) $request->session()->get('kiosk_service_mode');
         $rules = ['no_rkm_medis' => ['required', 'string', 'max:15']];
-        if ($mode === 'scheduled') {
+        if (in_array($mode, ['scheduled', 'online'], true)) {
             $rules['kd_poli'] = ['required', 'string', 'max:5'];
             $rules['kd_dokter'] = ['required', 'string', 'max:20'];
         }
@@ -149,16 +149,24 @@ class KioskController extends Controller
             $this->active->configureClinicDatabase($installation);
 
             if ($mode === 'online') {
-                // Pastikan tujuan registrasi lokal valid sebelum mengirim ke BPJS,
-                // tetapi jangan menulis apa pun sampai BPJS menyatakan sukses.
-                $service = $this->onlineService();
-                $result = $onlineRegistrations->register($installation, (string) ($participant['noka'] ?? ''), $onlineDebug);
+                // Kirim ke PCare terlebih dahulu agar request dan respons aktual
+                // selalu tersedia pada panel debug. Registrasi lokal hanya dibuat
+                // sesudah PCare menyatakan pendaftaran berhasil.
+                $service = $this->selectedOnlineService($data['kd_poli'], $data['kd_dokter']);
+                $result = $onlineRegistrations->register(
+                    $installation,
+                    (string) ($participant['noka'] ?? ''),
+                    (string) ($participant['fktp_kode'] ?? ''),
+                    (string) $service->kd_poli_pcare,
+                    $onlineDebug
+                );
                 $localRegistration = $this->saveLocalRegistration(
                     $data['no_rkm_medis'],
-                    $service->kd_poli,
-                    $service->kd_dokter,
+                    $data['kd_poli'],
+                    $data['kd_dokter'],
                     $service,
-                    $participant
+                    $participant,
+                    'Sudah'
                 );
                 $request->session()->forget(['kiosk_verified_rm', 'kiosk_verified_participant', 'kiosk_service_mode']);
                 return response()->json([
@@ -190,7 +198,7 @@ class KioskController extends Controller
     private function selectionOptions(string $mode): array
     {
         if ($mode === 'online') {
-            return $this->emptySelection('online');
+            return ['mode' => 'online', 'polis' => $this->onlineSchedules(), 'doctors' => []];
         }
 
         return ['mode' => 'scheduled', 'polis' => $this->schedules(), 'doctors' => []];
@@ -208,29 +216,66 @@ class KioskController extends Controller
         return $schedule;
     }
 
-    private function onlineService(): object
+    private function selectedOnlineService(string $poliCode, string $doctorCode): object
     {
-        $service = $this->scheduleQuery()
-            ->join('maping_poliklinik_pcare as mpp', 'mpp.kd_poli_rs', '=', 'j.kd_poli')
-            ->where('mpp.kd_poli_pcare', '999')
+        $poli = DB::connection('clinic')->table('poliklinik as p')
+            ->join('maping_poliklinik_pcare as mpp', 'mpp.kd_poli_rs', '=', 'p.kd_poli')
+            ->where('p.status', '1')
+            ->where('p.kd_poli', $poliCode)
+            ->whereNotNull('mpp.kd_poli_pcare')
+            ->where('mpp.kd_poli_pcare', '<>', '')
+            ->select(['p.kd_poli', 'p.nm_poli', 'p.registrasi', 'p.registrasilama', 'mpp.kd_poli_pcare'])
             ->first();
+        if (!$poli) throw new RuntimeException('Poli aktif belum memiliki mapping kode poli PCare.');
 
-        if (!$service) {
-            throw new RuntimeException('Poli PCare 999 belum dipetakan ke poli lokal dengan dokter aktif yang terjadwal hari ini.');
-        }
+        $doctor = DB::connection('clinic')->table('dokter')
+            ->where('status', '1')
+            ->where('kd_dokter', $doctorCode)
+            ->select(['kd_dokter', 'nm_dokter'])
+            ->first();
+        if (!$doctor) throw new RuntimeException('Dokter yang dipilih tidak aktif atau tidak ditemukan.');
 
-        return $service;
+        return (object) [...(array) $poli, ...(array) $doctor];
     }
 
-    private function saveLocalRegistration(string $medicalRecord, string $poliCode, string $doctorCode, object $service, array $participant): array
+    private function onlineSchedules(): array
     {
-        return DB::connection('clinic')->transaction(function () use ($medicalRecord, $poliCode, $doctorCode, $service, $participant) {
+        $doctors = DB::connection('clinic')->table('dokter')
+            ->where('status', '1')
+            ->orderBy('nm_dokter')
+            ->get(['kd_dokter', 'nm_dokter'])
+            ->map(fn ($doctor) => [
+                'kd_dokter' => $doctor->kd_dokter,
+                'nm_dokter' => $doctor->nm_dokter,
+            ])->values()->all();
+
+        return DB::connection('clinic')->table('poliklinik as p')
+            ->join('maping_poliklinik_pcare as mpp', 'mpp.kd_poli_rs', '=', 'p.kd_poli')
+            ->where('p.status', '1')
+            ->whereNotNull('mpp.kd_poli_pcare')
+            ->where('mpp.kd_poli_pcare', '<>', '')
+            ->orderBy('p.nm_poli')
+            ->get(['p.kd_poli', 'p.nm_poli', 'mpp.kd_poli_pcare'])
+            ->map(fn ($poli) => [
+                'kd_poli' => $poli->kd_poli,
+                'nm_poli' => $poli->nm_poli,
+                'kd_poli_pcare' => $poli->kd_poli_pcare,
+                'doctors' => $doctors,
+            ])->values()->all();
+    }
+
+    private function saveLocalRegistration(string $medicalRecord, string $poliCode, string $doctorCode, object $service, array $participant, string $status = 'Belum'): array
+    {
+        return DB::connection('clinic')->transaction(function () use ($medicalRecord, $poliCode, $doctorCode, $service, $participant, $status) {
             $patient = DB::connection('clinic')->table('pasien')->where('no_rkm_medis', $medicalRecord)->lockForUpdate()->first();
             if (!$patient) throw new RuntimeException('Data pasien tidak ditemukan.');
 
             $today = now('Asia/Jakarta')->toDateString();
             $existing = DB::connection('clinic')->table('reg_periksa')->where('no_rkm_medis', $patient->no_rkm_medis)->where('kd_poli', $poliCode)->whereDate('tgl_registrasi', $today)->first();
             if ($existing) {
+                if ($status === 'Sudah' && $existing->stts !== 'Sudah') {
+                    DB::connection('clinic')->table('reg_periksa')->where('no_rawat', $existing->no_rawat)->update(['stts' => 'Sudah']);
+                }
                 $this->saveRegistrationPrograms($existing->no_rawat, $participant);
                 return ['existing' => true, 'no_rawat' => $existing->no_rawat, 'no_antrean' => $existing->no_reg];
             }
@@ -251,7 +296,7 @@ class KioskController extends Controller
                 'no_reg' => $noQueue, 'no_rawat' => $noRawat, 'tgl_registrasi' => $today, 'jam_reg' => now('Asia/Jakarta')->format('H:i:s'),
                 'kd_dokter' => $doctorCode, 'no_rkm_medis' => $patient->no_rkm_medis, 'kd_poli' => $poliCode,
                 'p_jawab' => $patient->nm_pasien, 'almt_pj' => $this->responsibleAddress($patient), 'hubunganpj' => 'DIRI SENDIRI',
-                'biaya_reg' => $oldPoli ? $service->registrasilama : $service->registrasi, 'stts' => 'Belum',
+                'biaya_reg' => $oldPoli ? $service->registrasilama : $service->registrasi, 'stts' => $status,
                 'stts_daftar' => $oldPatient ? 'Lama' : 'Baru', 'status_lanjut' => 'Ralan', 'kd_pj' => 'BPJ',
                 'umurdaftar' => $age, 'sttsumur' => 'Th', 'status_bayar' => 'Belum Bayar', 'status_poli' => $oldPoli ? 'Lama' : 'Baru',
             ]);
@@ -260,6 +305,7 @@ class KioskController extends Controller
             return ['existing' => false, 'no_rawat' => $noRawat, 'no_antrean' => $noQueue];
         });
     }
+
 
     private function scheduleQuery()
     {
