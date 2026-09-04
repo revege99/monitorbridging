@@ -136,6 +136,7 @@ class KioskController extends Controller
         if (in_array($mode, ['scheduled', 'online'], true)) {
             $rules['kd_poli'] = ['required', 'string', 'max:5'];
             $rules['kd_dokter'] = ['required', 'string', 'max:20'];
+            $rules['kd_pj'] = ['required', 'string', 'max:3'];
         }
         $data = $request->validate($rules);
         $onlineDebug = null;
@@ -147,6 +148,7 @@ class KioskController extends Controller
             if (!in_array($mode, ['scheduled', 'online'], true)) throw new RuntimeException('Jenis layanan Anjungan belum dipilih.');
             $installation = $this->active->resolve();
             $this->active->configureClinicDatabase($installation);
+            $payerCode = $this->selectedPayer($data['kd_pj']);
 
             if ($mode === 'online') {
                 // Kirim ke PCare terlebih dahulu agar request dan respons aktual
@@ -166,6 +168,7 @@ class KioskController extends Controller
                     $data['kd_dokter'],
                     $service,
                     $participant,
+                    $payerCode,
                     'Sudah'
                 );
                 $request->session()->forget(['kiosk_verified_rm', 'kiosk_verified_participant', 'kiosk_service_mode']);
@@ -180,7 +183,7 @@ class KioskController extends Controller
             }
 
             $service = $this->selectedService($data['kd_poli'], $data['kd_dokter']);
-            $result = $this->saveLocalRegistration($data['no_rkm_medis'], $data['kd_poli'], $data['kd_dokter'], $service, $participant);
+            $result = $this->saveLocalRegistration($data['no_rkm_medis'], $data['kd_poli'], $data['kd_dokter'], $service, $participant, $payerCode);
 
             $request->session()->forget(['kiosk_verified_rm', 'kiosk_verified_participant', 'kiosk_service_mode']);
             return response()->json(['status' => true, 'message' => $result['existing'] ? 'Pasien sudah terdaftar di poli hari ini.' : 'Antrean berhasil diambil.', ...$result]);
@@ -198,15 +201,15 @@ class KioskController extends Controller
     private function selectionOptions(string $mode): array
     {
         if ($mode === 'online') {
-            return ['mode' => 'online', 'polis' => $this->onlineSchedules(), 'doctors' => []];
+            return ['mode' => 'online', 'polis' => $this->onlineSchedules(), 'doctors' => [], 'payers' => $this->activePayers()];
         }
 
-        return ['mode' => 'scheduled', 'polis' => $this->schedules(), 'doctors' => []];
+        return ['mode' => 'scheduled', 'polis' => $this->schedules(), 'doctors' => [], 'payers' => $this->activePayers()];
     }
 
     private function emptySelection(string $mode): array
     {
-        return ['mode' => $mode, 'polis' => [], 'doctors' => []];
+        return ['mode' => $mode, 'polis' => [], 'doctors' => [], 'payers' => []];
     }
 
     private function selectedService(string $poliCode, string $doctorCode): object
@@ -238,6 +241,28 @@ class KioskController extends Controller
         return (object) [...(array) $poli, ...(array) $doctor];
     }
 
+    private function activePayers(): array
+    {
+        return DB::connection('clinic')->table('penjab')
+            ->where('status', '1')
+            ->orderByRaw("CASE WHEN kd_pj = 'BPJ' THEN 0 WHEN UPPER(png_jawab) LIKE '%BPJS%' THEN 1 ELSE 2 END")
+            ->orderBy('png_jawab')
+            ->get(['kd_pj', 'png_jawab'])
+            ->map(fn ($payer) => ['kd_pj' => $payer->kd_pj, 'png_jawab' => $payer->png_jawab])
+            ->values()->all();
+    }
+
+    private function selectedPayer(string $payerCode): string
+    {
+        $payer = DB::connection('clinic')->table('penjab')
+            ->where('kd_pj', $payerCode)
+            ->where('status', '1')
+            ->value('kd_pj');
+
+        if (!$payer) throw new RuntimeException('Penanggung jawab yang dipilih tidak aktif atau tidak ditemukan.');
+        return (string) $payer;
+    }
+
     private function onlineSchedules(): array
     {
         $doctors = DB::connection('clinic')->table('dokter')
@@ -264,9 +289,9 @@ class KioskController extends Controller
             ])->values()->all();
     }
 
-    private function saveLocalRegistration(string $medicalRecord, string $poliCode, string $doctorCode, object $service, array $participant, string $status = 'Belum'): array
+    private function saveLocalRegistration(string $medicalRecord, string $poliCode, string $doctorCode, object $service, array $participant, string $payerCode, string $status = 'Belum'): array
     {
-        return DB::connection('clinic')->transaction(function () use ($medicalRecord, $poliCode, $doctorCode, $service, $participant, $status) {
+        return DB::connection('clinic')->transaction(function () use ($medicalRecord, $poliCode, $doctorCode, $service, $participant, $payerCode, $status) {
             $patient = DB::connection('clinic')->table('pasien')->where('no_rkm_medis', $medicalRecord)->lockForUpdate()->first();
             if (!$patient) throw new RuntimeException('Data pasien tidak ditemukan.');
 
@@ -297,7 +322,7 @@ class KioskController extends Controller
                 'kd_dokter' => $doctorCode, 'no_rkm_medis' => $patient->no_rkm_medis, 'kd_poli' => $poliCode,
                 'p_jawab' => $patient->nm_pasien, 'almt_pj' => $this->responsibleAddress($patient), 'hubunganpj' => 'DIRI SENDIRI',
                 'biaya_reg' => $oldPoli ? $service->registrasilama : $service->registrasi, 'stts' => $status,
-                'stts_daftar' => $oldPatient ? 'Lama' : 'Baru', 'status_lanjut' => 'Ralan', 'kd_pj' => 'BPJ',
+                'stts_daftar' => $oldPatient ? 'Lama' : 'Baru', 'status_lanjut' => 'Ralan', 'kd_pj' => $payerCode,
                 'umurdaftar' => $age, 'sttsumur' => 'Th', 'status_bayar' => 'Belum Bayar', 'status_poli' => $oldPoli ? 'Lama' : 'Baru',
             ]);
             $this->saveRegistrationPrograms($noRawat, $participant);
