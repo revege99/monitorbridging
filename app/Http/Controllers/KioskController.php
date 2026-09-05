@@ -43,7 +43,7 @@ class KioskController extends Controller
             $request->session()->put('kiosk_service_mode', $data['mode']);
             $patient = $this->findPatientByParticipant($participant);
             if ($patient) $patient = $this->fillMissingParticipantIdentifiers($patient, $participant);
-            if ($patient && $participant['aktif']) {
+            if ($patient) {
                 $request->session()->put('kiosk_verified_rm', $patient->no_rkm_medis);
                 $request->session()->put('kiosk_verified_participant', $participant);
             }
@@ -53,8 +53,8 @@ class KioskController extends Controller
                 'participant' => $participant,
                 'participant_token' => Crypt::encryptString(json_encode(['participant' => $participant, 'issued_at' => now()->timestamp, 'clinic_id' => $installation->clinic_id], JSON_UNESCAPED_UNICODE)),
                 'patient' => $patient ? $this->patient($patient) : null,
-                'suggested_rm' => !$patient && $participant['aktif'] ? $this->nextMedicalRecord() : null,
-                'selection' => $participant['aktif'] ? $this->selectionOptions($data['mode']) : $this->emptySelection($data['mode']),
+                'suggested_rm' => !$patient ? $this->nextMedicalRecord() : null,
+                'selection' => $this->selectionOptions($data['mode']),
             ]);
         } catch (\Throwable $e) {
             report($e);
@@ -81,7 +81,6 @@ class KioskController extends Controller
             $tokenData = json_decode(Crypt::decryptString($data['participant_token']), true, 512, JSON_THROW_ON_ERROR);
             if ((int) ($tokenData['issued_at'] ?? 0) < now()->subMinutes(15)->timestamp) throw new RuntimeException('Sesi verifikasi peserta telah berakhir. Silakan cek kembali nomor peserta.');
             $participant = $tokenData['participant'] ?? [];
-            if (empty($participant['aktif'])) throw new RuntimeException('Peserta tidak aktif dan tidak dapat didaftarkan melalui Anjungan.');
             foreach (['nik', 'noka', 'nama', 'tanggal_lahir'] as $field) if (empty($participant[$field])) throw new RuntimeException("Data {$field} dari BPJS belum lengkap.");
 
             $installation = $this->active->resolve();
@@ -205,11 +204,6 @@ class KioskController extends Controller
         }
 
         return ['mode' => 'scheduled', 'polis' => $this->schedules(), 'doctors' => [], 'payers' => $this->activePayers()];
-    }
-
-    private function emptySelection(string $mode): array
-    {
-        return ['mode' => $mode, 'polis' => [], 'doctors' => [], 'payers' => []];
     }
 
     private function selectedService(string $poliCode, string $doctorCode): object
