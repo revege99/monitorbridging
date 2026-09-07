@@ -9,6 +9,16 @@
         return;
     }
 
+    const sidebarShell = sidebar.closest('aside');
+    const brandTitle = sidebarShell.querySelector('h1');
+    const brand = sidebarShell.querySelector(':scope > .relative > :first-child');
+    if (brand && !brand.matches('nav')) brand.classList.add('sidebar-brand');
+    if (brandTitle) {
+        brandTitle.querySelectorAll('br').forEach((lineBreak) => lineBreak.replaceWith(' '));
+        const brandIcon = brand?.querySelector('[class*="h-11"], [class*="h-12"]');
+        brandIcon?.classList.add('sidebar-brand-icon');
+    }
+
     const dashboardLink = Array.from(sidebar.querySelectorAll('a[href]'))
         .find((link) => link.textContent.trim().toLowerCase().includes('dashboard'));
 
@@ -109,6 +119,21 @@
     const scrollStorageKey = 'monitoring-bridging.sidebar-scroll';
     const dropdownStorageKey = 'monitoring-bridging.sidebar-dropdowns';
     const dropdownButtons = Array.from(sidebar.querySelectorAll('[data-dropdown-toggle]'));
+
+    const groupIcons = {
+        'Monitor BPJS': '<rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4M6 11h3l2-4 3 7 2-3h2"/>',
+        'Satu Sehat': '<path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6Z"/>',
+        'Analitik': '<path d="M4 3v18h17M8 16v-5M13 16V7M18 16V4"/>',
+        'Laporan': '<path d="M6 3h9l4 4v14H6ZM14 3v5h5M9 12h7M9 16h7"/>',
+        'Audit Log': '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+        'Master Data': '<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 4 16 4 16 0V5M4 12c0 4 16 4 16 0"/>',
+        'Konfigurasi Bridging': '<path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3"/><circle cx="15" cy="17" r="3"/>',
+    };
+    dropdownButtons.forEach((button) => {
+        const label = button.querySelector('.font-semibold')?.textContent?.trim();
+        const icon = button.querySelector('span:first-child svg');
+        if (icon && groupIcons[label]) icon.innerHTML = groupIcons[label];
+    });
 
     const buttonKey = (button) => {
         const label = button.querySelector('.font-semibold')?.textContent?.trim();
