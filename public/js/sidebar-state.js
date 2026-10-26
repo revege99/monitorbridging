@@ -127,7 +127,7 @@
         'Laporan': '<path d="M6 3h9l4 4v14H6ZM14 3v5h5M9 12h7M9 16h7"/>',
         'Audit Log': '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
         'Master Data': '<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 4 16 4 16 0V5M4 12c0 4 16 4 16 0"/>',
-        'Konfigurasi Bridging': '<path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3"/><circle cx="15" cy="17" r="3"/>',
+        'Konfigurasi': '<path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3"/><circle cx="15" cy="17" r="3"/>',
     };
     dropdownButtons.forEach((button) => {
         const label = button.querySelector('.font-semibold')?.textContent?.trim();

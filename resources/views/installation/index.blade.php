@@ -6,7 +6,7 @@
     @fonts
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
 </head>
-<body class="setup-page min-h-screen bg-[#f4f7fb] text-slate-900">
+<body class="pcare-page setup-management-page setup-page min-h-screen bg-[#f4f7fb] text-slate-900">
 <div class="min-h-screen lg:grid lg:grid-cols-[220px_minmax(0,1fr)]">
     <aside class="relative bg-[#071325] text-white">
         <div class="relative flex h-full flex-col px-[5px] py-5">
@@ -16,11 +16,11 @@
     </aside>
     <main>
         <header class="app-page-header"><div class="flex items-center justify-between px-4 py-2.5"><div><h2 class="font-semibold">Aktivasi Instalasi</h2><p class="text-xs text-slate-500">Tetapkan instalasi ini untuk satu klinik</p></div>@include('partials.clinic-selector')</div></header>
-        <div class="mx-auto max-w-6xl p-4"><section class="rounded-2xl border bg-white p-6 shadow-sm">
+        <div class="mx-auto max-w-6xl p-4"><section class="pcare-card"><div class="pcare-heading setup-activation-heading"><div><h3>Aktivasi Instalasi</h3><p>Tentukan klinik yang digunakan oleh instalasi ini.</p></div></div>
             @if($installation)
                 <div class="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-5"><p class="text-xs font-semibold text-emerald-700">INSTALASI AKTIF</p><h3 class="mt-2 text-xl font-semibold">{{ $installation->clinic->name }}</h3><p class="mt-1 text-sm text-slate-600">{{ $installation->clinic->code }} · Diaktifkan {{ $installation->activated_at?->format('d-m-Y H:i') }}</p></div>
             @endif
-            <form id="activation-form" method="POST" action="{{ route('installation.activate') }}">@csrf
+            <form class="pcare-form" id="activation-form" method="POST" action="{{ route('installation.activate') }}">@csrf
                 <label class="text-sm font-medium">Pilih Klinik
                     <select id="activation-clinic" name="clinic_id" required class="mt-2 w-full rounded-xl border border-slate-200 p-3">@foreach($clinics as $clinic)<option value="{{ $clinic->id }}" @selected($installation?->clinic_id===$clinic->id)>{{ $clinic->name }}</option>@endforeach</select>
                 </label>

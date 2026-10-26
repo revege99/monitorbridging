@@ -6,7 +6,7 @@
     @fonts
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
 </head>
-<body class="bpjs-config-page setup-page min-h-screen bg-[#f4f7fb] text-slate-900 lg:h-dvh lg:overflow-hidden">
+<body class="pcare-page bpjs-credentials-page setup-page min-h-screen bg-[#f4f7fb] text-slate-900 lg:h-dvh lg:overflow-hidden">
 <div class="min-h-screen lg:grid lg:h-dvh lg:grid-cols-[220px_minmax(0,1fr)]">
     <aside class="relative overflow-hidden bg-[#071325] text-white">
         <div class="absolute inset-0 bg-[linear-gradient(180deg,_#081426_0%,_#071220_100%)]"></div>
@@ -20,18 +20,30 @@
         </div>
     </aside>
     <main class="flex min-h-0 flex-col overflow-hidden">
-        <header class="app-page-header"><div class="flex items-center justify-between px-4 py-2.5"><div><h2 class="text-base font-semibold">Konfigurasi BPJS</h2><div class="mt-1 text-xs text-slate-500">Konfigurasi Bridging &gt; BPJS</div></div>@include('partials.clinic-selector')</div></header>
+        <header class="app-page-header"><div class="flex items-center justify-between px-4 py-2.5"><div><h2 class="text-base font-semibold">Konfigurasi BPJS</h2><div class="mt-1 text-xs text-slate-500">Konfigurasi &gt; BPJS</div></div>@include('partials.clinic-selector')</div></header>
         <div class="flex-1 overflow-auto p-4">
-            <section class="rounded-2xl border border-slate-200 bg-white shadow-sm">
-                <div class="flex items-center justify-between border-b px-5 py-4"><div><h3 class="font-semibold">Kredensial BPJS</h3><p class="mt-1 text-xs text-slate-500">Satu konfigurasi kredensial untuk setiap klinik.</p></div><button data-modal-open="bpjs-create" class="rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-semibold text-white">+ Tambah BPJS</button></div>
-                <div class="overflow-x-auto"><table class="w-full text-left text-sm"><thead class="bg-slate-50 text-xs text-slate-500"><tr><th class="px-5 py-3">Klinik</th><th>Cons ID</th><th>Kode Aplikasi</th><th>Username</th><th>Status Key</th><th class="pr-5 text-right">Aksi</th></tr></thead><tbody>
-                @forelse($configurations as $configuration)
-                    <tr class="border-t"><td class="px-5 py-4 font-semibold">{{ $configuration->clinic->name }}</td><td>{{ $configuration->cons_id }}</td><td>{{ $configuration->kode_aplikasi }}</td><td>{{ $configuration->username }}</td><td><span class="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">Tersimpan</span></td><td class="pr-5 text-right"><button data-modal-open="bpjs-edit-{{ $configuration->id }}" class="rounded-lg border px-3 py-2 text-xs font-semibold text-blue-600">Edit</button> <form method="POST" action="{{ route('configurations.bpjs.destroy', $configuration) }}" class="inline" onsubmit="return confirm('Hapus konfigurasi BPJS ini?')">@csrf @method('DELETE')<button class="rounded-lg border px-3 py-2 text-xs font-semibold text-rose-600">Hapus</button></form></td></tr>
-                @empty<tr><td colspan="6" class="p-12 text-center text-slate-500">Belum ada konfigurasi BPJS.</td></tr>@endforelse
+            <section class="pcare-card" aria-labelledby="pcare-heading">
+                <div class="pcare-toolbar">
+                    <div class="pcare-heading"><span class="pcare-emblem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6Z"/><circle cx="13" cy="10" r="2"/><path d="m11.5 11.5-4 4M8 15l1 1"/></svg></span><div><h3 id="pcare-heading">Kredensial BPJS</h3><p>Kelola kredensial integrasi BPJS untuk setiap klinik.</p></div></div>
+                    <div class="pcare-tools"><label class="pcare-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="10" r="7"/><path d="m15 15 5 5"/></svg><input id="pcare-search" type="search" placeholder="Cari konfigurasi..." aria-label="Cari klinik, Cons ID, kode aplikasi, atau username"></label><button data-modal-open="pcare-create" class="pcare-add"><span aria-hidden="true">&#43;</span> Tambah Kredensial</button></div>
+                </div>
+                <div class="pcare-table-wrap"><table class="pcare-table"><thead><tr><th>Klinik</th><th>Cons ID</th><th>Username</th><th>Kode Aplikasi</th><th>Aksi</th></tr></thead><tbody>
+                @foreach($configurations as $configuration)
+                    <tr data-pcare-row data-search="{{ mb_strtolower($configuration->clinic->name.' '.$configuration->cons_id.' '.$configuration->username.' '.$configuration->kode_aplikasi) }}">
+                        <td>{{ $configuration->clinic->name }}</td>
+                        @foreach(['cons_id' => 'Cons ID', 'username' => 'Username'] as $field => $label)
+                        <td><div class="pcare-credential" data-value="{{ $configuration->{$field} }}"><span>{{ $configuration->{$field} }}</span><button type="button" data-copy aria-label="Salin {{ $label }}" title="Salin {{ $label }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="7" width="11" height="14" rx="2"/><path d="M9 7V3h11v14h-5"/></svg></button></div></td>
+                        @endforeach
+                        <td>{{ $configuration->kode_aplikasi }}</td>
+                        <td><div class="pcare-actions"><button type="button" class="pcare-more" popovertarget="pcare-actions-{{ $configuration->id }}" aria-label="Aksi konfigurasi {{ $configuration->id }}"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg></button><div popover id="pcare-actions-{{ $configuration->id }}" class="pcare-action-menu"><button type="button" data-modal-open="pcare-edit-{{ $configuration->id }}" aria-label="Edit konfigurasi {{ $configuration->id }}" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m14 5 5 5M4 20l5-1L21 7l-5-5L4 14Z"/></svg><span>Edit</span></button><form method="POST" action="{{ route('configurations.bpjs.destroy', $configuration) }}" onsubmit="return confirm('Hapus Konfigurasi BPJS ini?')">@csrf @method('DELETE')<button class="pcare-delete" aria-label="Hapus konfigurasi {{ $configuration->id }}" title="Hapus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/></svg><span>Hapus</span></button></form></div></div></td>
+                    </tr>
+                @endforeach
+                    <tr id="pcare-empty" @if($configurations->isNotEmpty()) hidden @endif><td colspan="5">{{ $configurations->isEmpty() ? 'Belum ada konfigurasi BPJS. Tambahkan kredensial untuk memulai.' : 'Tidak ada konfigurasi yang sesuai pencarian.' }}</td></tr>
                 </tbody></table></div>
+                <div class="pcare-footer"><div><p class="pcare-note"><span aria-hidden="true">&#9432;</span> Kelola dan perbarui kredensial layanan BPJS.</p><p id="pcare-count" aria-live="polite"></p><p id="pcare-feedback" role="status"></p></div><div class="pcare-pagination"><select id="pcare-size" aria-label="Jumlah konfigurasi per halaman"><option value="10">10 / halaman</option><option value="25">25 / halaman</option><option value="50">50 / halaman</option></select><button id="pcare-prev" aria-label="Halaman sebelumnya">&#8249;</button><span id="pcare-page-number">1</span><button id="pcare-next" aria-label="Halaman berikutnya">&#8250;</button></div></div>
             </section>
-            <x-setup-modal id="bpjs-create" title="Tambah Konfigurasi BPJS"><form method="POST" action="{{ route('configurations.bpjs.store') }}">@csrf @include('configurations.bpjs.form', ['configuration' => null])</form></x-setup-modal>
-            @foreach($configurations as $configuration)<x-setup-modal id="bpjs-edit-{{ $configuration->id }}" title="Edit BPJS - {{ $configuration->clinic->name }}"><form method="POST" action="{{ route('configurations.bpjs.update', $configuration) }}">@csrf @method('PUT') @include('configurations.bpjs.form')</form></x-setup-modal>@endforeach
+            <x-pcare-modal subtitle="Kelola akses integrasi BPJS untuk setiap klinik." id="pcare-create" title="Tambah Konfigurasi BPJS"><form method="POST" action="{{ route('configurations.bpjs.store') }}">@csrf @include('configurations.bpjs.form', ['configuration' => null])</form></x-pcare-modal>
+            @foreach($configurations as $configuration)<x-pcare-modal subtitle="Kelola akses integrasi BPJS untuk setiap klinik." id="pcare-edit-{{ $configuration->id }}" title="Edit Konfigurasi BPJS - {{ $configuration->id }}"><form method="POST" action="{{ route('configurations.bpjs.update', $configuration) }}">@csrf @method('PUT') @include('configurations.bpjs.form')</form></x-pcare-modal>@endforeach
         </div>
     </main>
 </div>
@@ -52,5 +64,6 @@
 @endif
 <script>document.querySelectorAll('[data-modal-open]').forEach(b=>b.addEventListener('click',()=>document.getElementById(b.dataset.modalOpen)?.showModal()));document.querySelectorAll('[data-modal-close]').forEach(b=>b.addEventListener('click',()=>b.closest('dialog')?.close()));document.querySelectorAll('[data-dropdown-toggle]').forEach(b=>{const p=b.parentElement.querySelector('[data-dropdown-panel]'),i=b.querySelector('[data-dropdown-icon]');b.addEventListener('click',()=>{const o=b.getAttribute('aria-expanded')==='true';b.setAttribute('aria-expanded',o?'false':'true');p?.classList.toggle('hidden',o);i?.classList.toggle('rotate-180',!o);});});</script>
 <script>(()=>{const host=document.getElementById('flash-toast'),close=host?.querySelector('[data-flash-close]'),progress=host?.querySelector('[data-flash-progress]');if(!host||!close||!progress)return;requestAnimationFrame(()=>host.classList.remove('translate-y-3','opacity-0'));const dismiss=()=>{host.classList.add('translate-y-3','opacity-0');setTimeout(()=>host.remove(),280)};progress.animate([{transform:'scaleX(1)'},{transform:'scaleX(0)'}],{duration:4200,easing:'linear',fill:'forwards'});const timer=setTimeout(dismiss,4200);close.addEventListener('click',()=>{clearTimeout(timer);dismiss()})})();</script>
+<script src="{{ asset('js/pcare-config.js') }}"></script>
 <script src="{{ asset('js/sidebar-state.js') }}"></script>
 </body></html>

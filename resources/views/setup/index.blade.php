@@ -7,7 +7,7 @@
     @fonts
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
 </head>
-<body class="setup-page min-h-screen bg-[#f4f7fb] text-slate-900 lg:h-dvh lg:overflow-hidden">
+<body class="pcare-page setup-management-page setup-page min-h-screen bg-[#f4f7fb] text-slate-900 lg:h-dvh lg:overflow-hidden">
 <div class="min-h-screen lg:grid lg:h-dvh lg:grid-cols-[220px_minmax(0,1fr)]">
     <aside class="relative overflow-hidden bg-[#071325] text-white">
         <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.22),_transparent_28%),linear-gradient(180deg,_#081426_0%,_#071220_100%)]"></div>
@@ -37,7 +37,7 @@
 
         <div class="flex-1 overflow-auto p-4">
             @if($tab === 'clinics')
-                <section class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <section class="pcare-card setup-management-card">
                     <div class="flex items-center justify-between border-b border-slate-100 px-5 py-4">
                         <div><h3 class="font-semibold">Daftar Klinik</h3><p class="mt-1 text-xs text-slate-500">Kelola profil seluruh klinik yang terhubung.</p></div>
                         <button type="button" data-modal-open="clinic-create" class="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">+ Tambah Klinik</button>
@@ -47,28 +47,28 @@
                     </tbody></table></div>
                 </section>
 
-                <x-setup-modal id="clinic-create" title="Tambah Klinik"><form method="POST" action="{{ route('setup.clinics.store') }}">@csrf @include('setup.partials.clinic-form', ['clinic' => null])</form></x-setup-modal>
-                @foreach($clinics as $clinic)<x-setup-modal id="clinic-edit-{{ $clinic->id }}" title="Edit Profil Klinik"><form method="POST" action="{{ route('setup.clinics.update',$clinic) }}">@csrf @method('PUT') @include('setup.partials.clinic-form', ['clinic' => $clinic])</form></x-setup-modal>@endforeach
+                <x-pcare-modal subtitle="Kelola data dan pengaturan klinik." id="clinic-create" title="Tambah Klinik"><form method="POST" action="{{ route('setup.clinics.store') }}">@csrf @include('setup.partials.clinic-form', ['clinic' => null])</form></x-pcare-modal>
+                @foreach($clinics as $clinic)<x-pcare-modal subtitle="Kelola data dan pengaturan klinik." id="clinic-edit-{{ $clinic->id }}" title="Edit Profil Klinik"><form method="POST" action="{{ route('setup.clinics.update',$clinic) }}">@csrf @method('PUT') @include('setup.partials.clinic-form', ['clinic' => $clinic])</form></x-pcare-modal>@endforeach
 
             @elseif($tab === 'database')
-                <section class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <section class="pcare-card setup-management-card">
                     <div class="flex items-center justify-between border-b px-5 py-4"><div><h3 class="font-semibold">Konfigurasi Database</h3><p class="mt-1 text-xs text-slate-500">Satu koneksi SIMRS untuk setiap klinik.</p></div><button data-modal-open="database-create" class="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white">+ Tambah Konfigurasi</button></div>
                     <div class="overflow-x-auto"><table class="w-full text-left text-sm"><thead class="bg-slate-50 text-xs text-slate-500"><tr><th class="px-5 py-3">Klinik</th><th>Nama Server</th><th>Host</th><th>Database</th><th>Driver</th><th>Collation</th><th class="pr-5 text-right">Aksi</th></tr></thead><tbody>
                     @forelse($clinics as $clinic)<tr class="border-t"><td class="px-5 py-4 font-semibold">{{ $clinic->name }}</td>@if($clinic->database)<td>{{ $clinic->database->connection_name }}</td><td>{{ $clinic->database->host }}:{{ $clinic->database->port }}</td><td>{{ $clinic->database->database_name }}</td><td>MariaDB</td><td>{{ $clinic->database->collation }}</td><td class="pr-5 text-right"><form method="POST" action="{{ route('setup.database.test') }}" class="inline">@csrf<input type="hidden" name="clinic_id" value="{{ $clinic->id }}"><button class="rounded-lg border px-3 py-2 text-xs font-semibold text-emerald-700">Tes</button></form> <button data-modal-open="database-edit-{{ $clinic->id }}" class="rounded-lg border px-3 py-2 text-xs font-semibold text-blue-600">Edit</button></td>@else<td colspan="5" class="text-slate-400">Belum dikonfigurasi</td><td class="pr-5 text-right"><button data-modal-open="database-edit-{{ $clinic->id }}" class="rounded-lg border px-3 py-2 text-xs font-semibold text-blue-600">Konfigurasi</button></td>@endif</tr>@empty<tr><td colspan="7" class="p-12 text-center text-slate-500">Tambahkan profil klinik terlebih dahulu.</td></tr>@endforelse
                     </tbody></table></div>
                 </section>
-                <x-setup-modal id="database-create" title="Tambah Konfigurasi Database"><form method="POST" action="{{ route('setup.database.save') }}">@csrf @include('setup.partials.database-form', ['selectedClinic' => null])</form></x-setup-modal>
-                @foreach($clinics as $clinic)<x-setup-modal id="database-edit-{{ $clinic->id }}" title="Konfigurasi {{ $clinic->name }}"><form method="POST" action="{{ route('setup.database.save') }}">@csrf @include('setup.partials.database-form', ['selectedClinic' => $clinic])</form></x-setup-modal>@endforeach
+                <x-pcare-modal subtitle="Kelola data dan pengaturan klinik." id="database-create" title="Tambah Konfigurasi Database"><form method="POST" action="{{ route('setup.database.save') }}">@csrf @include('setup.partials.database-form', ['selectedClinic' => null])</form></x-pcare-modal>
+                @foreach($clinics as $clinic)<x-pcare-modal subtitle="Kelola data dan pengaturan klinik." id="database-edit-{{ $clinic->id }}" title="Konfigurasi {{ $clinic->name }}"><form method="POST" action="{{ route('setup.database.save') }}">@csrf @include('setup.partials.database-form', ['selectedClinic' => $clinic])</form></x-pcare-modal>@endforeach
 
             @else
-                <section class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <section class="pcare-card setup-management-card">
                     <div class="flex items-center justify-between border-b px-5 py-4"><div><h3 class="font-semibold">Manajemen User</h3><p class="mt-1 text-xs text-slate-500">Atur akses superadmin dan admin klinik.</p></div><button data-modal-open="user-create" class="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white">+ Tambah User</button></div>
                     <div class="overflow-x-auto"><table class="w-full text-left text-sm"><thead class="bg-slate-50 text-xs text-slate-500"><tr><th class="px-5 py-3">User</th><th>Role</th><th>Klinik</th><th>Status</th><th class="pr-5 text-right">Aksi</th></tr></thead><tbody>
                     @forelse($users as $managedUser)<tr class="border-t"><td class="px-5 py-4"><div class="font-semibold">{{ $managedUser->name }}</div><div class="text-xs text-slate-500">{{ '@'.$managedUser->username }} · {{ $managedUser->email }}</div></td><td><span class="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700">{{ ucfirst($managedUser->role) }}</span></td><td>{{ $managedUser->clinic?->name ?? 'Semua Klinik' }}</td><td>{{ $managedUser->is_active ? 'Aktif' : 'Nonaktif' }}</td><td class="pr-5 text-right"><button data-modal-open="user-edit-{{ $managedUser->id }}" class="rounded-lg border px-3 py-2 text-xs font-semibold text-blue-600">Edit</button></td></tr>@empty<tr><td colspan="5" class="p-12 text-center text-slate-500">Belum ada user.</td></tr>@endforelse
                     </tbody></table></div>
                 </section>
-                <x-setup-modal id="user-create" title="Tambah User"><form method="POST" action="{{ route('setup.users.store') }}">@csrf @include('setup.partials.user-form', ['managedUser' => null])</form></x-setup-modal>
-                @foreach($users as $managedUser)<x-setup-modal id="user-edit-{{ $managedUser->id }}" title="Edit User"><form method="POST" action="{{ route('setup.users.update',$managedUser) }}">@csrf @method('PUT') @include('setup.partials.user-form', ['managedUser' => $managedUser])</form>@if(!$managedUser->is(auth()->user()))<form method="POST" action="{{ route('setup.users.destroy',$managedUser) }}" onsubmit="return confirm('Hapus user ini?')" class="mt-3">@csrf @method('DELETE')<button class="text-xs font-semibold text-rose-600">Hapus user</button></form>@endif</x-setup-modal>@endforeach
+                <x-pcare-modal subtitle="Kelola data dan pengaturan klinik." id="user-create" title="Tambah User"><form method="POST" action="{{ route('setup.users.store') }}">@csrf @include('setup.partials.user-form', ['managedUser' => null])</form></x-pcare-modal>
+                @foreach($users as $managedUser)<x-pcare-modal subtitle="Kelola data dan pengaturan klinik." id="user-edit-{{ $managedUser->id }}" title="Edit User"><form method="POST" action="{{ route('setup.users.update',$managedUser) }}">@csrf @method('PUT') @include('setup.partials.user-form', ['managedUser' => $managedUser])</form>@if(!$managedUser->is(auth()->user()))<form method="POST" action="{{ route('setup.users.destroy',$managedUser) }}" onsubmit="return confirm('Hapus user ini?')" class="mt-3">@csrf @method('DELETE')<button class="text-xs font-semibold text-rose-600">Hapus user</button></form>@endif</x-pcare-modal>@endforeach
             @endif
         </div>
     </main>
@@ -105,5 +105,7 @@ document.querySelectorAll('[data-dropdown-toggle]').forEach(button => { const pa
     closeButton.addEventListener('click', () => { clearTimeout(timer); closeToast(); });
 })();
 </script>
+<script src="{{ asset('js/setup-management.js') }}"></script>
+<script src="{{ asset('js/pcare-config.js') }}"></script>
 <script src="{{ asset('js/sidebar-state.js') }}"></script>
 </body></html>

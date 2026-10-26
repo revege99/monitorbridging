@@ -35,29 +35,31 @@
                 throw new Error(validationMessage || errorData?.message || 'Gagal mengganti klinik.');
             }
 
-            const pageResponse = await fetch(window.location.href, {
-                credentials: 'same-origin',
-                headers: {'X-Requested-With': 'XMLHttpRequest'},
-            });
-            if (!pageResponse.ok) {
-                const errorData = await pageResponse.json().catch(() => null);
-                throw new Error(errorData?.message || 'Klinik berhasil dipilih, tetapi data klinik gagal dimuat.');
-            }
-
-            const html = await pageResponse.text();
-            const nextDocument = new DOMParser().parseFromString(html, 'text/html');
-            const nextMain = nextDocument.querySelector('main');
-            if (!nextMain) throw new Error('Konten halaman tidak ditemukan.');
-
-            main.replaceWith(nextMain);
-            sessionStorage.removeItem('monitoring-bridging.sidebar-navigation');
-            window.dispatchEvent(new CustomEvent('app:content-updated'));
-            window.dispatchEvent(new CustomEvent('app:loading', {detail: {show: false}}));
+            // Reload the selected clinic with fresh data and all page handlers.
+            window.location.reload();
         } catch (error) {
             select.disabled = false;
             main.classList.remove('pointer-events-none', 'opacity-60');
             window.dispatchEvent(new CustomEvent('app:loading', {detail: {show: false}}));
-            window.alert(error.message || 'Gagal mengganti klinik.');
+            // The request may have reached the server even if its response was lost.
+            // Remove old clinic content rather than leave potentially stale actions usable.
+            Array.from(main.children).filter(child => !child.matches('header')).forEach(child => child.remove());
+            const panel = document.createElement('div');
+            panel.className = 'pcare-card';
+            panel.style.margin = '24px';
+            panel.textContent = 'Data klinik belum dapat dimuat. Muat ulang halaman untuk memastikan klinik yang aktif.';
+            const retry = document.createElement('button');
+            retry.className = 'pcare-add';
+            retry.textContent = 'Muat ulang';
+            retry.onclick = () => window.location.reload();
+            panel.append(retry);
+            main.append(panel);
+            const toast = document.createElement('div');
+            toast.className = 'clinic-notice-toast';
+            toast.setAttribute('role', 'alert');
+            toast.textContent = error.message || 'Gagal mengganti klinik.';
+            document.body.append(toast);
+            setTimeout(() => toast.remove(), 6000);
         } finally {
             switching = false;
         }

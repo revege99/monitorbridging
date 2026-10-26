@@ -39,10 +39,13 @@ class AntreanFktpCallService
         ];
 
         $bpjs = $installation->clinic->bpjsConfiguration;
-        $baseUrl = BaseUrlConfiguration::firstOrFail()->base_url_antrean;
+        $baseUrl = BaseUrlConfiguration::firstOrFail()->base_url_antrean_panggil;
         $timestamp = time();
         $signature = base64_encode(hash_hmac('sha256', $bpjs->cons_id.'&'.$timestamp, $bpjs->secret_key, true));
-        $url = $this->callUrl($baseUrl);
+        $url = $baseUrl;
+        if (!is_string($url) || trim($url) === '') {
+            throw new RuntimeException('URL Antrean Panggil belum dikonfigurasi.');
+        }
         $started = microtime(true);
         $requestHeaders = [
             'X-cons-id' => $bpjs->cons_id,
@@ -83,15 +86,6 @@ class AntreanFktpCallService
         $json['debug'] = $debug;
 
         return $json;
-    }
-
-    private function callUrl(string $baseUrl): string
-    {
-        $url = rtrim(trim($baseUrl), '/');
-        if (preg_match('~/antreanfktp(?:_dev)?/antrean/panggil$~i', $url)) return $url;
-        if (preg_match('~/antreanfktp(?:_dev)?/antrean/add$~i', $url)) return preg_replace('~/add$~i', '/panggil', $url);
-        if (preg_match('~/antreanfktp(?:_dev)?$~i', $url)) return $url.'/antrean/panggil';
-        return $url.'/antreanfktp/antrean/panggil';
     }
 
     private function log(InstallationSetting $installation, string $reference, string $level, string $status, string $message, ?int $code, float $started): void

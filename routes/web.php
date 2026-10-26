@@ -51,6 +51,7 @@ Route::post('/setup-klinik/database/test', [SetupClinicController::class, 'testD
 Route::post('/setup-klinik/users', [SetupClinicController::class, 'storeUser'])->name('setup.users.store');
 Route::put('/setup-klinik/users/{user}', [SetupClinicController::class, 'updateUser'])->name('setup.users.update');
 Route::delete('/setup-klinik/users/{user}', [SetupClinicController::class, 'deleteUser'])->name('setup.users.destroy');
+Route::resource('/konfigurasi/pcare', \App\Http\Controllers\PcareConfigurationController::class)->only(['index', 'store', 'update', 'destroy'])->names('configurations.pcare');
 Route::get('/konfigurasi-bridging/bpjs', [BpjsConfigurationController::class, 'index'])->name('configurations.bpjs.index');
 Route::post('/konfigurasi-bridging/bpjs', [BpjsConfigurationController::class, 'store'])->name('configurations.bpjs.store');
 Route::put('/konfigurasi-bridging/bpjs/{bpjsConfiguration}', [BpjsConfigurationController::class, 'update'])->name('configurations.bpjs.update');

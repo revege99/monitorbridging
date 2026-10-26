@@ -29,7 +29,7 @@ class AntreanFktpAddService
         $payload=['nomorkartu'=>$data['no_peserta'],'nik'=>$data['no_ktp'],'nohp'=>$data['nohp'],'kodepoli'=>$data['kd_poli'],'namapoli'=>$data['nm_poli'],'norm'=>$data['no_rkm_medis'],'tanggalperiksa'=>$tanggal,'kodedokter'=>$data['kd_dokter_pcare'],'namadokter'=>$data['nm_dokter'],'jampraktek'=>date('H:i',strtotime($mulai)).'-'.date('H:i',strtotime($selesai)),'nomorantrean'=>$data['nomor'],'angkaantrean'=>(int)$data['angka'],'keterangan'=>''];
         $bpjs=$installation->clinic->bpjsConfiguration; $base=BaseUrlConfiguration::firstOrFail();
         $timestamp=time(); $signature=base64_encode(hash_hmac('sha256',$bpjs->cons_id.'&'.$timestamp,$bpjs->secret_key,true));
-        $url=$this->addQueueUrl($base->base_url_antrean);
+        $url=$base->base_url_antrean;
         $this->log($installation,$run,$output,'info','sending',"Mengirim {$data['no_rawat']} ({$data['nm_pasien']})",$data['no_rawat']); $started=microtime(true);
         $response=Http::timeout(60)->withHeaders(['X-cons-id'=>$bpjs->cons_id,'X-timestamp'=>(string)$timestamp,'X-signature'=>$signature,'user_key'=>$bpjs->user_key_antrol,'X-authorization'=>'Basic '.base64_encode($bpjs->username.':'.$bpjs->password.':'.$bpjs->kode_aplikasi)])->post($url,$payload);
         $json=$response->json(); $code=(int)data_get($json,'metadata.code',$response->status());
@@ -46,16 +46,6 @@ class AntreanFktpAddService
     private function terminal(int $code,string $message): bool
     {
         $m=preg_replace('/\s+/',' ',strtolower(trim($message))); return ($code===200&&$m==='ok')||($code===201&&$m==='peserta sudah terdaftar di poli tersebut pada hari ini');
-    }
-    private function addQueueUrl(string $baseUrl): string
-    {
-        $url = rtrim(trim($baseUrl), '/');
-        if (preg_match('~/antreanfktp(?:_dev)?/antrean/add$~i', $url)) return $url;
-        if (preg_match('~/antreanfktp(?:_dev)?/antrean/panggil$~i', $url)) {
-            return preg_replace('~/panggil$~i', '/add', $url);
-        }
-        if (preg_match('~/antreanfktp(?:_dev)?$~i', $url)) return $url.'/antrean/add';
-        return $url.'/antreanfktp/antrean/add';
     }
     private function saveResult(array $data,string $response,int $code,string $message): void
     {

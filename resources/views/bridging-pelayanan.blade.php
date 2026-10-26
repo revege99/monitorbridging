@@ -308,7 +308,7 @@
                                                 <path d="m16.24 7.76 2.83-2.83" />
                                             </svg>
                                         </span>
-                                        <span class="min-w-0 flex-1 text-sm font-semibold">Konfigurasi Bridging</span>
+                                        <span class="min-w-0 flex-1 text-sm font-semibold">Konfigurasi</span>
                                         <div class="ml-auto flex shrink-0 items-center gap-3">
                                             <div class="h-px w-24 bg-white/10"></div>
                                             <svg class="h-5 w-5 text-slate-400 transition duration-200" data-dropdown-icon viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
@@ -317,8 +317,8 @@
                                         </div>
                                     </button>
                                     <div class="mt-1 space-y-1 pl-[7px] text-sm text-slate-300" data-dropdown-panel>
-                                        @foreach (['BPJS', 'Satu Sehat', 'Base URL BPJS', 'Base URL Satu Sehat'] as $item)
-                                            <a href="{{ match($item) { 'BPJS' => route('configurations.bpjs.index'), 'Satu Sehat' => route('configurations.satu-sehat.index'), 'Base URL BPJS' => route('configurations.base-url.index'), default => route('configurations.satu-sehat-base-url.index') } }}" class="flex items-center gap-3 rounded-xl px-2 py-2.5 hover:bg-white/5">
+                                        @foreach (['Config Pcare', 'BPJS', 'Satu Sehat', 'Base URL BPJS', 'Base URL Satu Sehat'] as $item)
+                                            <a href="{{ match($item) { 'Config Pcare' => route('configurations.pcare.index'), 'BPJS' => route('configurations.bpjs.index'), 'Satu Sehat' => route('configurations.satu-sehat.index'), 'Base URL BPJS' => route('configurations.base-url.index'), default => route('configurations.satu-sehat-base-url.index') } }}" class="flex items-center gap-3 rounded-xl px-2 py-2.5 hover:bg-white/5">
                                                 <span class="h-1.5 w-1.5 rounded-full bg-slate-500"></span>
                                                 <svg class="h-5 w-5 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                                                     <path d="M12 2v4" />

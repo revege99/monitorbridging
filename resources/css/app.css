@@ -359,3 +359,134 @@ aside nav [data-dropdown-panel] a.sidebar-current-link > span:first-child { back
 @media (prefers-reduced-motion: reduce) {
     aside nav a, aside nav button { transition: none; }
 }
+
+/* PCare credential management */
+.pcare-page main { background: linear-gradient(135deg, #f3f8ff, #f8fbff); min-width: 0; }
+.pcare-page .app-page-header > div { min-height: 74px; gap: 16px; flex-wrap: wrap; padding: 14px 24px; }
+.pcare-page .app-page-header h2 { font-size: 24px; letter-spacing: -.5px; color: #172442; }
+.pcare-page main > .flex-1 { padding: 24px; }
+.pcare-card { padding: 20px; border: 1px solid #e6edf8; border-radius: 16px; background: #fff; box-shadow: 0 5px 22px #203e7210; color: #243658; }
+.pcare-toolbar, .pcare-heading, .pcare-tools, .pcare-footer, .pcare-pagination, .pcare-credential, .pcare-actions { display: flex; align-items: center; gap: 12px; }
+.pcare-toolbar { justify-content: space-between; flex-wrap: wrap; margin-bottom: 22px; gap: 20px; }
+.pcare-heading { gap: 16px; }
+.pcare-heading h3 { font-size: 20px; font-weight: 650; color: #172442; }
+.pcare-heading p { font-size: 13px; color: #6780a6; margin-top: 3px; }
+.pcare-emblem { display: grid; place-items: center; width: 56px; height: 56px; flex-shrink: 0; border-radius: 11px; background: #edf3ff; color: #1261ff; }
+.pcare-emblem svg { width: 32px; height: 32px; }
+.pcare-search { display: flex; align-items: center; gap: 10px; border: 1px solid #dfe8f6; border-radius: 9px; padding: 9px 12px; color: #6780a6; }
+.pcare-search svg { width: 19px; height: 19px; }
+.pcare-search input { width: 170px; outline: none; font-size: 13px; }
+.pcare-search:focus-within { outline: 2px solid #8bb6ff; }
+.pcare-add { display: flex; align-items: center; gap: 9px; background: #125cff; color: #fff; padding: 10px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; white-space: nowrap; }
+.pcare-add:hover { background: #084bdd; }
+.pcare-add span { font-size: 22px; line-height: 20px; }
+.pcare-table-wrap { border: 1px solid #e5edf8; border-radius: 10px; overflow-x: auto; }
+.pcare-table { width: 100%; min-width: 680px; text-align: left; font-size: 13px; border-collapse: collapse; }
+.pcare-page .pcare-table th, .pcare-page .pcare-table td { padding: 16px 14px !important; text-align: left !important; }
+.pcare-table th { background: #f3f7fd; color: #557097; font-size: 12px; font-weight: 600; }
+.pcare-table td { border-top: 1px solid #e5edf8; }
+.pcare-table tbody tr:hover { background: #fafcff; }
+.pcare-credential { gap: 8px; }
+.pcare-credential > span { display: inline-block; max-width: 190px; overflow-wrap: anywhere; }
+.pcare-credential button, .pcare-actions button, .pcare-pagination button { display: inline-grid; place-items: center; width: 33px; height: 33px; flex-shrink: 0; border-radius: 7px; border: 1px solid #e4ecf8; background: #f6f9fd; color: #516c93; }
+.pcare-credential svg, .pcare-actions svg { width: 17px; height: 17px; }
+.pcare-actions button { color: #1261ff; background: #fbfdff; }
+.pcare-actions .pcare-delete { color: #ec3444; border-color: #ffe3e5; background: #fffafb; }
+.pcare-status { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 8px; background: #e9faf1; color: #06974b; font-size: 12px; font-weight: 600; }
+.pcare-status i { width: 8px; height: 8px; border-radius: 50%; background: #08ad4e; }
+.pcare-footer { justify-content: space-between; margin-top: 18px; flex-wrap: wrap; font-size: 12px; }
+.pcare-note { color: #6780a6; margin-bottom: 8px; }
+.pcare-note span { font-size: 20px; color: #1261ff; vertical-align: middle; margin-right: 6px; }
+.pcare-pagination select { padding: 8px 12px; border: 1px solid #dfe8f6; border-radius: 7px; margin-right: 3px; background: #fff; }
+.pcare-pagination button { font-size: 23px; background: #fff; }
+.pcare-pagination button:disabled { opacity: .4; }
+#pcare-page-number { display: grid; place-items: center; min-width: 34px; height: 34px; background: #1261ff; color: #fff; border-radius: 7px; }
+#pcare-empty td { text-align: center !important; padding: 40px 20px !important; color: #6780a6; }
+#pcare-feedback:empty { display: none; }
+.pcare-card button:focus-visible, .pcare-card select:focus-visible { outline: 2px solid #1261ff; outline-offset: 3px; }
+@media(max-width: 640px) { .pcare-page main > .flex-1 { padding: 12px; } .pcare-card { padding: 14px; } .pcare-tools { flex-wrap: wrap; width: 100%; } .pcare-search { flex: 1; } .pcare-search input { width: 100%; min-width: 0; } .pcare-heading h3 { font-size: 18px; } }
+
+/* Compact PCare controls and stable credential columns. */
+.pcare-search, .pcare-add, .pcare-pagination select, .pcare-card button, #pcare-page-number { height: 35px; box-sizing: border-box; font-size: 12px; }
+.pcare-search { padding: 0 10px; }
+.pcare-search input { font-size: 12px; }
+.pcare-add { padding: 0 12px; }
+.pcare-pagination select { padding: 0 10px; }
+.pcare-table { table-layout: fixed; }
+.pcare-table th:nth-child(1) { width: 8%; }
+.pcare-table th:nth-child(2), .pcare-table th:nth-child(3) { width: 41%; }
+.pcare-table th:nth-child(4) { width: 10%; }
+
+.pcare-credential { display: grid; grid-template-columns: minmax(0, 1fr) 33px 33px; align-items: start; width: 100%; }
+.pcare-credential > span { min-width: 0; max-width: none; overflow-wrap: anywhere; word-break: break-word; white-space: normal; line-height: 20px; padding-top: 7px; }
+.pcare-action-menu { position: fixed; inset: auto; margin: 0; padding: 6px; min-width: 145px; border: 1px solid #e0e8f4; border-radius: 10px; background: white; box-shadow: 0 10px 32px #18365d26; }
+.pcare-action-menu::backdrop { background: transparent; }
+.pcare-actions .pcare-action-menu button { display: flex; align-items: center; justify-content: flex-start; gap: 10px; width: 100%; height: 35px; padding: 0 10px; border: 0; background: transparent; color: #344766; font-size: 12px; }
+.pcare-actions .pcare-action-menu button:hover { background: #eff5ff; }
+.pcare-actions .pcare-action-menu .pcare-delete { color: #dc3545; }
+.pcare-actions .pcare-action-menu .pcare-delete:hover { background: #fff1f2; }
+.pcare-modal { margin: auto; width: min(94vw, 650px); padding: 0; border: 1px solid #e1e9f5; border-radius: 18px; background: white; color: #253654; box-shadow: 0 24px 80px #10254e40; }
+.pcare-modal::backdrop { background: #14284270; backdrop-filter: blur(3px); }
+.pcare-modal > header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 22px 24px; border-bottom: 1px solid #e5edf8; background: #f8fbff; }
+.pcare-modal-title { display: flex; align-items: center; gap: 12px; }
+.pcare-modal-title .pcare-emblem { width: 42px; height: 44px; }
+.pcare-modal-title .pcare-emblem svg { width: 27px; height: 27px; }
+.pcare-modal h3 { font-size: 17px; font-weight: 650; }
+.pcare-modal header p { margin-top: 4px; font-size: 12px; color: #7688a4; }
+.pcare-modal header > button { width: 35px; height: 35px; border-radius: 8px; background: white; border: 1px solid #e2eaf5; color: #6e809d; font-size: 23px; }
+.pcare-modal-body { max-height: 72dvh; overflow-y: auto; padding: 24px; }
+.pcare-form-intro { margin-bottom: 20px; }
+.pcare-form-intro h4 { font-size: 13px; font-weight: 650; }
+.pcare-form-intro p { margin-top: 4px; font-size: 12px; color: #7585a0; }
+.pcare-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.pcare-form label { display: block; font-size: 12px; color: #49607f; }
+.pcare-form input { height: 38px; border-radius: 8px; font-size: 12px; padding: 0 11px; border-color: #dce5f1; transition: border-color 150ms; }
+.pcare-form input:focus { outline: 2px solid #b8d2ff; outline-offset: 1px; border-color: #438aff; }
+.pcare-form input[readonly] { background: #f2f6fb; color: #8795aa; }
+.pcare-form-hint { margin-top: 20px; background: #f0f6ff; border: 1px solid #deebff; border-radius: 8px; padding: 12px; font-size: 12px; line-height: 1.6; color: #55749e; }
+.pcare-form-footer { display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid #e7edf5; padding-top: 20px; margin-top: 24px; }
+.pcare-form-footer button { height: 35px; padding: 0 16px; border-radius: 8px; font-size: 12px; }
+@media(max-width: 540px) { .pcare-form-grid { grid-template-columns: 1fr; } .pcare-modal-body { padding: 18px; } .pcare-modal > header { padding: 18px; } }
+
+.bpjs-credentials-page .pcare-table { min-width: 860px; }
+.bpjs-credentials-page .pcare-table th:nth-child(1) { width: 20%; }
+.bpjs-credentials-page .pcare-table th:nth-child(2), .bpjs-credentials-page .pcare-table th:nth-child(3) { width: 28%; }
+.bpjs-credentials-page .pcare-table th:nth-child(4) { width: 14%; }
+.bpjs-credentials-page .pcare-table th:nth-child(5) { width: 10%; }
+
+.bpjs-credentials-page .pcare-table td { overflow-wrap: anywhere; }
+.pcare-form select { height: 38px; border-radius: 8px; font-size: 12px; padding: 0 11px; border-color: #dce5f1; background: white; }
+.pcare-form select:focus { outline: 2px solid #b8d2ff; outline-offset: 1px; border-color: #438aff; }
+.bpjs-credentials-page .pcare-credential { grid-template-columns: minmax(0, 1fr) 33px; }
+
+.base-url-page .pcare-table th:nth-child(1), .base-url-page .pcare-table th:nth-child(2) { width: 45%; }
+.base-url-page .pcare-table th:nth-child(3) { width: 10%; }
+.base-url-page .pcare-credential { grid-template-columns: minmax(0, 1fr) 33px; }
+.base-url-page .pcare-table td { overflow-wrap: anywhere; }
+
+/* Setup Klinik uses the shared configuration presentation. */
+.setup-management-page .pcare-table { min-width: 920px; }
+.setup-management-page .pcare-table th:nth-child(n) { width: auto; }
+.setup-management-page .pcare-table th:first-child { width: 20%; }
+.setup-management-page .pcare-table th:last-child { width: 75px !important; min-width: 75px; }
+.setup-management-page .pcare-table td { overflow-wrap: anywhere; vertical-align: top; }
+.setup-management-page .pcare-table td:last-child { width: 75px !important; min-width: 75px; }
+.setup-management-page .pcare-modal form > div { gap: 18px; }
+.setup-management-page .pcare-modal label { display: block; font-size: 12px; color: #49607f; }
+.setup-management-page .pcare-modal input:not([type=checkbox]):not([type=radio]), .setup-management-page .pcare-modal select { height: 38px; padding: 0 11px; font-size: 12px; border: 1px solid #dce5f1; border-radius: 8px; }
+.setup-management-page .pcare-modal textarea { padding: 10px 11px; border: 1px solid #dce5f1; border-radius: 8px; font-size: 12px; }
+.setup-management-page .pcare-modal input:focus, .setup-management-page .pcare-modal select:focus, .setup-management-page .pcare-modal textarea:focus { outline: 2px solid #b8d2ff; outline-offset: 1px; }
+.setup-management-page .pcare-modal button:not([data-modal-close]), .setup-management-page .pcare-modal form [data-modal-close], .setup-management-page #activation-modal button, .setup-management-page #activation-form button { height: 35px; padding: 0 16px; font-size: 12px; border-radius: 8px; }
+.setup-management-page .pcare-modal form .justify-end { padding-top: 18px; margin-top: 6px; border-top: 1px solid #e7edf5; }
+.setup-activation-heading { margin-bottom: 24px; }
+.setup-management-page #activation-form select { height: 38px; }
+
+.pcare-clinic-page .pcare-table th:nth-child(1) { width: 22%; }
+.pcare-clinic-page .pcare-table th:nth-child(2), .pcare-clinic-page .pcare-table th:nth-child(3) { width: 34%; }
+.pcare-clinic-page .pcare-table td:first-child { overflow-wrap: anywhere; }
+
+.clinic-notice-toast { position: fixed; right: 24px; bottom: 24px; z-index: 150; max-width: min(420px, calc(100vw - 32px)); padding: 18px 20px; border: 1px solid #cfe0f8; border-left: 4px solid #2478ff; border-radius: 12px; background: #fff; color: #345073; box-shadow: 0 12px 36px #18365d26; font-size: 13px; line-height: 1.6; }
+.pcare-add:disabled { opacity: .5; cursor: not-allowed; }
+
+.base-url-page .pcare-table th:nth-child(1), .base-url-page .pcare-table th:nth-child(2), .base-url-page .pcare-table th:nth-child(3) { width: 30%; }
+.base-url-page .pcare-table th:nth-child(4) { width: 10%; }
