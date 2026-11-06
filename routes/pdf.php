@@ -5,5 +5,5 @@ use Illuminate\Support\Facades\Route;
 
 // Semua route di sini mendapat prefix /api/integration/pdf, autentikasi, dan throttle.
 Route::prefix('bpjs')->name('bpjs.')->group(function () {
-    Route::post('sppFKTP', SppFktpController::class)->name('sppFKTP');
+    Route::match(['get', 'post'], 'sppFKTP', SppFktpController::class)->name('sppFKTP');
 });

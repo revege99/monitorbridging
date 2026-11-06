@@ -35,7 +35,11 @@ Dokumen pertama: **sppFKTP — Surat Pernyataan Pelayanan di FKTP**.
 - Template: `resources/views/pdf/documents/bpjs/sppFKTP.blade.php`
 - Test: `tests/Feature/Api/Pdf/Bpjs/SppFktpTest.php`
 
-Endpoint aktif: `POST /api/integration/pdf/bpjs/sppFKTP`.
+Endpoint aktif: `GET|POST /api/integration/pdf/bpjs/sppFKTP`.
+POST mengirim `no_rawat` melalui body; GET dapat mengirimnya melalui query string.
+Keduanya tetap memerlukan header `X-Integration-Token`. URL yang dibuka langsung
+di address bar browser tidak mengirim header tersebut sehingga menghasilkan 401.
+Client Java di bawah mengirim header dan menerima PDF tanpa perlu login browser.
 Ukuran awal A5 landscape dengan margin atas/bawah 10 mm dan kiri/kanan 12 mm.
 Ubah ukuran/orientasi melalui `config/pdf.php` bila printer memakai kertas lain.
 Daftar panjang dapat berlanjut ke halaman berikutnya; area tanda tangan dijaga

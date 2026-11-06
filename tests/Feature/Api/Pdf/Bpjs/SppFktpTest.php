@@ -48,6 +48,20 @@ class SppFktpTest extends TestCase
         }
     }
 
+    public function test_get_accepts_encoded_care_number_but_still_requires_header_token(): void
+    {
+        $url = self::URL.'?'.http_build_query(['no_rawat' => Fixture::NO_RAWAT]);
+        $this->get($url)->assertUnauthorized();
+        $this->get($url.'&token=pdf-test-token')->assertUnauthorized();
+
+        $response = $this->withHeader('X-Integration-Token', 'pdf-test-token')
+            ->get($url)->assertOk()->assertHeader('Content-Type', 'application/pdf');
+        $this->assertStringStartsWith('%PDF-', $response->getContent());
+        $this->assertStringContainsString('no-store', $response->headers->get('Cache-Control'));
+
+        $this->get(self::URL)->assertUnprocessable()->assertJsonValidationErrors('no_rawat');
+    }
+
     public function test_data_comes_from_matching_visit_and_setting_in_clinic_database(): void
     {
         // Default sengaja bukan clinic: semua query PDF harus eksplisit memilih clinic.
