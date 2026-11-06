@@ -5,6 +5,11 @@ use App\Http\Controllers\Api\PcareTaccController;
 use App\Http\Controllers\QueueDisplayController;
 use Illuminate\Support\Facades\Route;
 
+Route::prefix('integration/pdf')
+    ->name('api.integration.pdf.')
+    ->middleware([\App\Http\Middleware\AuthenticatePdfIntegration::class, 'throttle:60,1'])
+    ->group(__DIR__.'/pdf.php');
+
 Route::post('/integration/antrean-fktp/panggil', AntreanFktpCallController::class)
     ->defaults('queue_status', 1)
     ->name('api.integration.antrean-fktp.panggil');

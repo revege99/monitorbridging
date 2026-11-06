@@ -56,3 +56,11 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 ## License
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+
+## Khanza PDF printing
+
+Struktur folder per modul, pola URL `/api/integration/pdf/{modul}/{dokumen}`,
+parameter `no_rawat`, autentikasi header, dan contoh pemanggilan Java Khanza
+tersedia di [docs/pdf-printing.md](docs/pdf-printing.md).
+Route dokumen ditempatkan di `routes/pdf.php`. Dokumen pertama tersedia melalui
+`POST /api/integration/pdf/bpjs/sppFKTP` (Surat Pernyataan Pelayanan di FKTP).
