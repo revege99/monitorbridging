@@ -18,6 +18,7 @@ class PdfRenderer
             'defaultFont' => 'Helvetica',
         ]);
 
-        return $pdf->loadView($view, $data)->setPaper($paper, $orientation)->stream($filename);
+        return $pdf->loadView($view, $data)->setPaper($paper, $orientation)->stream($filename)
+            ->header('Cache-Control', 'private, no-store');
     }
 }

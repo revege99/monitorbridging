@@ -48,15 +48,13 @@ class SppFktpTest extends TestCase
         }
     }
 
-    public function test_get_accepts_encoded_care_number_but_still_requires_header_token(): void
+    public function test_browser_get_returns_inline_pdf_without_token_or_expiration(): void
     {
         $url = self::URL.'?'.http_build_query(['no_rawat' => Fixture::NO_RAWAT]);
-        $this->get($url)->assertUnauthorized();
-        $this->get($url.'&token=pdf-test-token')->assertUnauthorized();
-
-        $response = $this->withHeader('X-Integration-Token', 'pdf-test-token')
-            ->get($url)->assertOk()->assertHeader('Content-Type', 'application/pdf');
+        config(['services.khanza.integration_token' => '']);
+        $response = $this->get($url)->assertOk()->assertHeader('Content-Type', 'application/pdf');
         $this->assertStringStartsWith('%PDF-', $response->getContent());
+        $this->assertStringContainsString('inline;', $response->headers->get('Content-Disposition'));
         $this->assertStringContainsString('no-store', $response->headers->get('Cache-Control'));
 
         $this->get(self::URL)->assertUnprocessable()->assertJsonValidationErrors('no_rawat');

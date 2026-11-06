@@ -1,11 +1,13 @@
 package bridging.pdf;
 
 import java.io.BufferedInputStream;
+import java.awt.Desktop;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -16,6 +18,20 @@ import java.util.Locale;
 /** Client Java 8+ untuk endpoint PDF sppFKTP. Tidak membutuhkan library tambahan. */
 public final class SppFktpClient {
     private SppFktpClient() {
+    }
+
+    /** Membuka endpoint GET langsung di browser, tanpa unduh file lewat Java. */
+    public static void openInBrowser(URL endpoint, String noRawat) throws IOException, URISyntaxException {
+        if (noRawat == null || noRawat.trim().isEmpty() || noRawat.trim().length() > 17) {
+            throw new IllegalArgumentException("no_rawat wajib diisi, maksimal 17 karakter.");
+        }
+        if (!Desktop.isDesktopSupported() || !Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+            throw new IOException("Komputer ini tidak mendukung pembukaan browser otomatis.");
+        }
+        String separator = endpoint.toExternalForm().contains("?") ? "&" : "?";
+        URL preview = new URL(endpoint.toExternalForm() + separator + "no_rawat="
+            + URLEncoder.encode(noRawat.trim(), "UTF-8"));
+        Desktop.getDesktop().browse(preview.toURI());
     }
 
     public static Path download(URL endpoint, String noRawat, String integrationToken) throws IOException {

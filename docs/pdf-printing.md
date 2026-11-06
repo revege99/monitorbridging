@@ -37,9 +37,9 @@ Dokumen pertama: **sppFKTP — Surat Pernyataan Pelayanan di FKTP**.
 
 Endpoint aktif: `GET|POST /api/integration/pdf/bpjs/sppFKTP`.
 POST mengirim `no_rawat` melalui body; GET dapat mengirimnya melalui query string.
-Keduanya tetap memerlukan header `X-Integration-Token`. URL yang dibuka langsung
-di address bar browser tidak mengirim header tersebut sehingga menghasilkan 401.
-Client Java di bawah mengirim header dan menerima PDF tanpa perlu login browser.
+GET dapat dibuka langsung di browser tanpa token, login, tanda tangan URL, atau
+batas waktu. POST tetap memerlukan header `X-Integration-Token`. Siapa pun yang
+mengetahui URL dan no_rawat dapat mengakses PDF melalui GET.
 Ukuran awal A5 landscape dengan margin atas/bawah 10 mm dan kiri/kanan 12 mm.
 Ubah ukuran/orientasi melalui `config/pdf.php` bila printer memakai kertas lain.
 Daftar panjang dapat berlanjut ke halaman berikutnya; area tanda tangan dijaga
@@ -77,73 +77,64 @@ memerlukan akses internet. `setting.logo` tidak menggantikan logo BPJS tersebut.
 Untuk modul baru, buat folder sejajar saat diperlukan, misalnya `Farmasi` di PHP
 serta `farmasi` di Blade dan URL. Jangan membuat folder per pasien/no_rawat.
 
-## Kontrak URL Khanza
+## Membuka sppFKTP dari Khanza
 
-- Metode standar: **POST** `/api/integration/pdf/{modul}/{dokumen}`.
-- Body JSON atau form: `no_rawat` wajib berupa string, maksimum 17 karakter,
-  mengikuti batas pada integrasi proyek saat ini. Aturan tambahan khusus dokumen
-  dapat menggunakan request turunan.
-- Jangan memakai no_rawat sebagai segmen path karena dapat mengandung `/`,
-  misalnya `2026/11/06/000001`.
-- Header autentikasi: `X-Integration-Token`, memakai konfigurasi yang sudah ada,
-  `services.khanza.integration_token` dari `KHANZA_INTEGRATION_TOKEN`.
-  Token kosong/salah ditolak 401. Jangan kirim token melalui query URL.
-- Respons sukses harus `application/pdf` dengan `Content-Disposition: inline`
-  dan nama berkas aman. Middleware memasang `Cache-Control: private, no-store`.
-- Kontrak error: 401 autentikasi, 422 input, 404 kunjungan tidak ditemukan,
-  429 pembatasan permintaan, 503 konfigurasi belum siap, 500 kegagalan cetak.
-  Pesan error tidak membocorkan SQL/kredensial.
+Endpoint browser: **GET** `/api/integration/pdf/bpjs/sppFKTP?no_rawat=...`.
+Kirim no_rawat sebagai query yang di-URL-encode. Tidak ada token, login, signature,
+atau waktu kedaluwarsa untuk GET. Setiap permintaan membuat PDF dari data terkini.
+Respons memakai `application/pdf`, `Content-Disposition: inline`, dan
+`Cache-Control: private, no-store`. Browser menampilkan PDF apabila viewer PDF
+bawaannya aktif; pengaturan browser pengguna dapat memilih mengunduhnya.
 
-Contoh Java untuk surat pernyataan pelayanan:
+Contoh aksi tombol cetak Khanza:
 
 ```java
-import bridging.pdf.SppFktpClient;
 import java.awt.Desktop;
 import java.net.URL;
-import java.nio.file.Path;
+import java.net.URLEncoder;
 
-// noRawat diambil dari kunjungan yang dipilih di Khanza.
-// Token pada komputer Khanza harus sama dengan KHANZA_INTEGRATION_TOKEN di web.
-String integrationToken = System.getenv("KHANZA_INTEGRATION_TOKEN");
+// noRawat berasal dari kunjungan yang dipilih di Khanza.
 URL obj = new URL("http://" + koneksiDB.HOSTCALL() + "/"
     + koneksiDB.FOLDERCALL()
-    + "/public/api/integration/pdf/bpjs/sppFKTP");
-Path pdf = SppFktpClient.download(obj, noRawat, integrationToken);
-Desktop.getDesktop().open(pdf.toFile());
+    + "/public/api/integration/pdf/bpjs/sppFKTP?no_rawat="
+    + URLEncoder.encode(noRawat, "UTF-8"));
+Desktop.getDesktop().browse(obj.toURI());
 ```
 
-### Struktur di proyek Java Khanza
+Ini membuka alamat web menggunakan browser bawaan, tanpa menyimpan file
+sementara melalui Java. Letakkan import di awal file dan pemanggilan dalam
+method tombol/menu; tangani exception melalui penanganan error form Khanza.
+
+Helper opsional tersedia di [SppFktpClient.java](examples/khanza/SppFktpClient.java).
+Salin ke struktur berikut dalam proyek Java Khanza:
 
 ```text
-src/
-  bridging/
-    pdf/
-      SppFktpClient.java             # HTTP POST, unduh dan validasi respons PDF
+src/bridging/pdf/SppFktpClient.java
 ```
 
-Salin [SppFktpClient.java](examples/khanza/SppFktpClient.java) yang disediakan di
-repository web ini ke `src/bridging/pdf/SppFktpClient.java` pada proyek Khanza.
-Package-nya `bridging.pdf`; mendukung Java 8+ tanpa dependency tambahan.
-Tambahkan pemanggilan di atas pada aksi tombol/menu cetak sppFKTP di form Khanza.
-Bagian `import` diletakkan di awal file, sedangkan pemanggilan di dalam method.
-Jalankan unduhan di background worker (misalnya `SwingWorker`) agar UI tidak
-membeku; tangani `IOException` untuk menampilkan pesan kegagalan kepada operator.
+Pemanggilan helper dengan URL endpoint tanpa query:
 
-Client mengirim `no_rawat` sebagai form POST dan token melalui header, memeriksa
-status HTTP, Content-Type, serta penanda `%PDF-`, kemudian mengembalikan file
-sementara dengan awalan `sppFKTP-`. Redirect tidak diikuti agar token tidak
-diteruskan ke host lain. File parsial dihapus jika unduhan gagal; file berhasil
-ditandai untuk dihapus saat JVM keluar dan dapat dihapus lebih awal setelah
-viewer ditutup. Jangan menaruh token dalam source code atau query URL.
+```java
+SppFktpClient.openInBrowser(obj, noRawat);
+```
 
-Nama route Laravel: `api.integration.pdf.bpjs.sppFKTP`.
+`openInBrowser` mendukung Java 8+ tanpa library tambahan. Method lama `download`
+tetap tersedia untuk integrasi POST yang membutuhkan file lokal dan token header.
+POST tidak diubah menjadi akses tanpa autentikasi.
+
+Nama route GET: `api.integration.pdf.bpjs.sppFKTP`.
+Nama route POST: `api.integration.pdf.bpjs.sppFKTP.post`.
 Nama file respons: `sppFKTP-{no_rawat-dengan-strip}.pdf`.
 Huruf besar/kecil pada path URL harus mengikuti `sppFKTP`.
 
-Membuat `new URL(...)` saja belum mengirim POST, body, atau header. Khanza harus
-membaca byte respons untuk membuka PDF. Gunakan HTTPS jika tersedia untuk
-melindungi token dan data pasien. `/public` mengikuti deployment contoh Khanza;
-hilangkan jika document root server sudah menunjuk ke folder `public` Laravel.
+Kontrak error: 422 input tidak valid, 404 kunjungan tidak ditemukan,
+429 pembatasan permintaan, 503 konfigurasi belum siap, 500 kegagalan cetak.
+POST juga dapat menghasilkan 401 jika header token kosong/salah. Token POST
+mengikuti `KHANZA_INTEGRATION_TOKEN` dan tidak diletakkan dalam query URL.
+
+Bagian `/public` mengikuti deployment Khanza pada contoh; hilangkan jika document
+root server sudah menunjuk ke folder `public` Laravel. Tidak ada endpoint pembuat
+tautan sementara untuk alur browser ini.
 
 ## Menambahkan dokumen
 
