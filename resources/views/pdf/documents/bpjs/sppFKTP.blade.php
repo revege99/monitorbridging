@@ -3,9 +3,8 @@
 @section('title', 'Surat Pernyataan Pelayanan di FKTP')
 
 @section('styles')
-    .letterhead { border-bottom: 0.7pt solid #333; }
-    .letterhead td { padding: 0 0 3mm; vertical-align: middle; }
-    .logo-cell { width: 53mm; }
+    .letterhead { position: relative; border-bottom: 0.7pt solid #333; padding-bottom: 3mm; }
+    .letterhead-logo { position: absolute; left: 0; top: 0; }
     .heading { text-align: center; font-weight: bold; line-height: 1.6; }
     .visit { text-align: right; font-weight: bold; margin: 1.5mm 0 4mm; }
     .identity td { padding: 0 0 2mm; font-size: 8.5pt; }
@@ -25,15 +24,13 @@
 
 @section('content')
     <div class="keep-together">
-        <table class="letterhead">
-            <tr>
-                <td class="logo-cell">@include('pdf.partials.bpjs-logo')</td>
-                <td class="heading">
-                    Surat Pernyataan Pelayanan di FKTP<br>
-                    {{ $facility }}
-                </td>
-            </tr>
-        </table>
+        <div class="letterhead">
+            <div class="letterhead-logo">@include('pdf.partials.bpjs-logo', ['width' => '45mm'])</div>
+            <div class="heading">
+                Surat Pernyataan Pelayanan di FKTP<br>
+                {{ $facility }}
+            </div>
+        </div>
         <div class="visit">No Kunjungan: {{ $visit_number }}</div>
 
         <table class="identity">
