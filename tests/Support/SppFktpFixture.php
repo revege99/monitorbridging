@@ -22,6 +22,7 @@ class SppFktpFixture
             'reg_periksa' => ['no_rawat', 'no_rkm_medis', 'tgl_registrasi', 'status_lanjut'],
             'pasien' => ['no_rkm_medis', 'nm_pasien', 'no_ktp', 'jk', 'tgl_lahir', 'no_tlp', 'alamat', 'no_peserta'],
             'pcare_pendaftaran' => ['no_rawat', 'noKartu', 'tglDaftar', 'kdTkp'],
+            'pcare_kunjungan_umum' => ['no_rawat', 'noKunjungan'],
             'pcare_tindakan_ralan_diberikan' => ['no_rawat', 'noKunjungan', 'kd_jenis_prw', 'tgl_perawatan', 'jam'],
             'jns_perawatan' => ['kd_jenis_prw', 'nm_perawatan'],
             'setting' => ['kode_ppk', 'nama_instansi', 'aktifkan'],
@@ -53,6 +54,9 @@ class SppFktpFixture
         ]);
         $db->table('jns_perawatan')->insert([
             'kd_jenis_prw' => 'ANC', 'nm_perawatan' => 'Pelayanan ANC',
+        ]);
+        $db->table('pcare_kunjungan_umum')->insert([
+            'no_rawat' => self::NO_RAWAT, 'noKunjungan' => '000000001126P000001',
         ]);
         $db->table('pcare_tindakan_ralan_diberikan')->insert([
             'no_rawat' => self::NO_RAWAT, 'noKunjungan' => '000000001126P000001',

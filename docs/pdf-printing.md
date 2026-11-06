@@ -59,12 +59,13 @@ dan konfigurasi database; konfigurasi credential/base URL BPJS tidak diperlukan.
 | Nomor kartu | `pcare_pendaftaran.noKartu`, cadangan `pasien.no_peserta` |
 | Tanggal pelayanan | `pcare_pendaftaran.tglDaftar`, cadangan `reg_periksa.tgl_registrasi` |
 | Jenis pelayanan | `pcare_pendaftaran.kdTkp`: 10 = RJTP, 20 = RITP, 50 = Promotif Preventif; cadangan `reg_periksa.status_lanjut` |
-| Nomor kunjungan | Nomor unik nonkosong/non-0 dari `pcare_tindakan_ralan_diberikan.noKunjungan` untuk no_rawat yang sama |
+| Nomor kunjungan | `pcare_kunjungan_umum.noKunjungan`, dicocokkan persis melalui `no_rawat` |
 | Pelayanan | `pcare_tindakan_ralan_diberikan` dan `jns_perawatan.nm_perawatan`, satu baris per kode tindakan |
 | Umur | Selisih tanggal lahir dan tanggal pelayanan, bukan umur pada hari cetak |
 
-Nomor kunjungan yang belum tersedia ditampilkan `-`. Bila ditemukan lebih dari
-satu nomor kunjungan berbeda, cetak ditolak 422 agar nomor tidak dipilih sembarang.
+Nomor kunjungan yang belum tersedia, kosong, atau bernilai `0` ditampilkan `-`.
+Nomor ini tetap tersedia meskipun belum ada tindakan. Nomor kunjungan dari tabel
+tindakan tidak digunakan sebagai pengganti.
 Tindakan kosong ditampilkan sebagai keterangan belum ada tindakan tercatat;
 tindakan seperti ANC tidak ditambahkan otomatis. Field opsional kosong memakai `-`.
 Identitas fasilitas yang belum tersedia menghasilkan 503, bukan kop fasilitas contoh.

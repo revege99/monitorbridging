@@ -66,6 +66,9 @@ class SppFktpTest extends TestCase
     {
         // Default sengaja bukan clinic: semua query PDF harus eksplisit memilih clinic.
         DB::setDefaultConnection('sqlite');
+        DB::connection('clinic')->table('pcare_kunjungan_umum')->insert([
+            'no_rawat' => '2026/11/02/000002', 'noKunjungan' => 'KUNJUNGAN-LAIN',
+        ]);
         DB::connection('clinic')->table('pcare_tindakan_ralan_diberikan')->insert([
             'no_rawat' => '2026/11/02/000002', 'noKunjungan' => 'KUNJUNGAN-LAIN',
             'kd_jenis_prw' => 'LAIN', 'tgl_perawatan' => '2026-11-02', 'jam' => '11:00:00',
@@ -93,6 +96,7 @@ class SppFktpTest extends TestCase
     {
         $db = DB::connection('clinic');
         $db->table('pcare_pendaftaran')->delete();
+        $db->table('pcare_kunjungan_umum')->delete();
         $db->table('pcare_tindakan_ralan_diberikan')->delete();
         $db->table('pasien')->update(['tgl_lahir' => '0000-00-00', 'no_tlp' => null]);
         $data = app(SppFktpService::class)->data(Fixture::NO_RAWAT);
@@ -104,15 +108,34 @@ class SppFktpTest extends TestCase
         $this->assertSame([], $data['services']);
     }
 
-    public function test_conflicting_visit_numbers_are_rejected_before_printing(): void
+    public function test_visit_number_comes_from_general_visit_even_without_actions(): void
+    {
+        DB::connection('clinic')->table('pcare_tindakan_ralan_diberikan')->delete();
+        $data = app(SppFktpService::class)->data(Fixture::NO_RAWAT);
+        $this->assertSame('000000001126P000001', $data['visit_number']);
+        $this->assertSame([], $data['services']);
+    }
+
+    public function test_action_visit_numbers_do_not_override_general_visit_number(): void
     {
         DB::connection('clinic')->table('pcare_tindakan_ralan_diberikan')->insert([
             'no_rawat' => Fixture::NO_RAWAT, 'noKunjungan' => 'NOMOR-BERBEDA',
             'kd_jenis_prw' => 'LAIN', 'tgl_perawatan' => '2026-11-02', 'jam' => '11:00:00',
         ]);
+        $this->assertSame('000000001126P000001', app(SppFktpService::class)->data(Fixture::NO_RAWAT)['visit_number']);
         $this->withHeader('X-Integration-Token', 'pdf-test-token')
-            ->postJson(self::URL, ['no_rawat' => Fixture::NO_RAWAT])
-            ->assertUnprocessable()->assertJsonValidationErrors('no_rawat');
+            ->postJson(self::URL, ['no_rawat' => Fixture::NO_RAWAT])->assertOk();
+    }
+
+    public function test_missing_or_empty_general_visit_number_does_not_use_action_number(): void
+    {
+        $db = DB::connection('clinic');
+        foreach ([null, '', '   ', '0'] as $number) {
+            $db->table('pcare_kunjungan_umum')->update(['noKunjungan' => $number]);
+            $this->assertSame('-', app(SppFktpService::class)->data(Fixture::NO_RAWAT)['visit_number']);
+        }
+        $db->table('pcare_kunjungan_umum')->delete();
+        $this->assertSame('-', app(SppFktpService::class)->data(Fixture::NO_RAWAT)['visit_number']);
     }
 
     public function test_missing_setting_returns_service_unavailable(): void
