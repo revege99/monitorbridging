@@ -48,6 +48,7 @@ class BaseUrlConfigurationController extends Controller
             'base_url_pcare' => ['required', 'url:http,https', 'max:2048'],
             'base_url_antrean' => ['required', 'url:http,https', 'max:2048'],
             'base_url_antrean_panggil' => ['required', 'url:http,https', 'max:2048'],
+            'base_url_antrean_batal' => ['nullable', 'url:http,https', 'max:2048'],
         ]);
     }
 }

@@ -64,3 +64,9 @@ parameter `no_rawat`, autentikasi header, dan contoh pemanggilan Java Khanza
 tersedia di [docs/pdf-printing.md](docs/pdf-printing.md).
 Route dokumen ditempatkan di `routes/pdf.php`. Dokumen pertama tersedia melalui
 `POST /api/integration/pdf/bpjs/sppFKTP` (Surat Pernyataan Pelayanan di FKTP).
+
+## Batal antrean FKTP
+
+Endpoint `POST /api/integration/antrean-fktp/batal` menerima `no_rawat` dan `alasan`
+dari Khanza. Konfigurasi URL, sumber data, struktur file, dan kontrak integrasi
+tersedia di [docs/antrean-fktp-batal.md](docs/antrean-fktp-batal.md).

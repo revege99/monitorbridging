@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AntreanFktpCallController;
+use App\Http\Controllers\Api\AntreanFktpCancelController;
 use App\Http\Controllers\Api\PcareTaccController;
 use App\Http\Controllers\QueueDisplayController;
 use Illuminate\Support\Facades\Route;
@@ -17,6 +18,9 @@ Route::post('/integration/antrean-fktp/panggil', AntreanFktpCallController::clas
 Route::post('/integration/antrean-fktp/tidak-hadir', AntreanFktpCallController::class)
     ->defaults('queue_status', 2)
     ->name('api.integration.antrean-fktp.tidak-hadir');
+
+Route::post('/integration/antrean-fktp/batal', AntreanFktpCancelController::class)
+    ->name('api.integration.antrean-fktp.batal');
 
 Route::post('/integration/display/panggil', [QueueDisplayController::class, 'store'])
     ->name('api.integration.display.store');
