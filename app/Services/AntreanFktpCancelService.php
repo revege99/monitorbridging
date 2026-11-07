@@ -46,6 +46,16 @@ class AntreanFktpCancelService
             'X-signature' => $signature,
             'user_key' => $bpjs->user_key_antrol,
         ];
+        $debug = [
+            'url' => $url,
+            'headers' => [
+                'x-cons-id' => $bpjs->cons_id,
+                'x-timestamp' => (string) $timestamp,
+                'x-signature' => 'generated (hidden)',
+                'user_key' => blank($bpjs->user_key_antrol) ? 'empty' : 'configured (hidden)',
+            ],
+            'payload' => $payload,
+        ];
 
         try {
             $response = Http::acceptJson()->timeout(60)->withHeaders($requestHeaders)->post($url, $payload);
@@ -54,6 +64,7 @@ class AntreanFktpCancelService
 
             return [
                 'metadata' => ['code' => 500, 'message' => 'Gagal menghubungi BPJS.'],
+                'debug' => $debug,
             ];
         }
 
@@ -65,6 +76,8 @@ class AntreanFktpCancelService
         $message = (string) data_get($json, 'metadata.message', 'Tidak ada pesan');
         $label = 'Batal antrean';
         $this->log($installation, $noRawat, $code === 200 ? 'success' : 'warning', $code === 200 ? 'success' : 'failed', "{$label}: {$code} | {$message}", $code, $started);
+
+        $json['debug'] = $debug;
 
         return $json;
     }

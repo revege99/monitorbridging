@@ -97,6 +97,42 @@ BPJS. Gangguan koneksi menghasilkan `metadata.code = 500`. Respons bukan JSON
 menghasilkan `metadata.code = 502`. Token salah menghasilkan HTTP 401, input
 tidak valid HTTP 400, dan kegagalan konfigurasi/pemrosesan HTTP 500.
 
+## Debug dari Java Khanza
+
+Sesudah web mencoba mengirim request BPJS, header respons berikut tersedia
+termasuk ketika BPJS mengembalikan `metadata.code = 201`:
+
+```text
+X-BPJS-Debug-Url
+X-BPJS-Debug-Cons-Id
+X-BPJS-Debug-Timestamp
+X-BPJS-Debug-Signature       # generated (hidden), bukan nilai signature
+X-BPJS-Debug-User-Key        # configured (hidden) atau empty
+X-BPJS-Payload-Tanggal
+X-BPJS-Payload-Kode-Poli
+X-BPJS-Payload-Nomor-Kartu
+X-BPJS-Payload-Alasan
+```
+
+Alasan pada header memakai percent encoding agar Unicode/baris baru tidak
+merusak header HTTP. Payload JSON yang dikirim ke BPJS tetap berisi teks asli.
+Contoh pembacaan:
+
+```java
+String alasanHeader = connection.getHeaderField("X-BPJS-Payload-Alasan");
+String alasanAktual = alasanHeader == null ? null
+    : java.net.URLDecoder.decode(alasanHeader, "UTF-8");
+```
+
+Debug batal tidak memiliki `status`/`waktu`; hapus pembacaan kedua field panggil
+itu dari tampilan debug batal. Header dapat tidak tersedia jika validasi gagal,
+kunjungan lokal tidak ditemukan, atau konfigurasi gagal sebelum pengiriman.
+Signature dan user key asli tidak dikembalikan ke client. HTTP 200 dari Laravel
+tidak berarti pembatalan berhasil; periksa `metadata.code` dan `metadata.message`.
+Jika BPJS menjawab data tidak ditemukan, cocokkan tanggal, kode poli PCare,
+nomor kartu, dan lingkungan URL layanan dengan request add yang berhasil.
+Jangan mengirim ulang pembatalan otomatis hanya untuk mendapatkan debug.
+
 ## Deployment
 
 Jalankan migration berikut di database central, lalu isi URL batal dari menu:

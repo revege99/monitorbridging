@@ -32,10 +32,34 @@ class AntreanFktpCancelController extends Controller
             $active->configureClinicDatabase($installation);
             $data = $validator->validated();
 
-            return response()->json(
-                $service->cancel($installation, trim($data['no_rawat']), trim($data['alasan'])),
+            $result = $service->cancel($installation, trim($data['no_rawat']), trim($data['alasan']));
+            $debug = $result['debug'] ?? [];
+            unset($result['debug']);
+            $response = response()->json(
+                $result,
                 200, [], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE,
             );
+            $headers = [
+                'X-BPJS-Debug-Url' => data_get($debug, 'url'),
+                'X-BPJS-Debug-Cons-Id' => data_get($debug, 'headers.x-cons-id'),
+                'X-BPJS-Debug-Timestamp' => data_get($debug, 'headers.x-timestamp'),
+                'X-BPJS-Debug-Signature' => data_get($debug, 'headers.x-signature'),
+                'X-BPJS-Debug-User-Key' => data_get($debug, 'headers.user_key'),
+                'X-BPJS-Payload-Tanggal' => data_get($debug, 'payload.tanggalperiksa'),
+                'X-BPJS-Payload-Kode-Poli' => data_get($debug, 'payload.kodepoli'),
+                'X-BPJS-Payload-Nomor-Kartu' => data_get($debug, 'payload.nomorkartu'),
+            ];
+            if (isset($debug['payload']['alasan'])) {
+                // Encoding menjaga header valid untuk alasan dengan Unicode/baris baru.
+                $headers['X-BPJS-Payload-Alasan'] = rawurlencode($debug['payload']['alasan']);
+            }
+            foreach ($headers as $name => $value) {
+                if ($value !== null) {
+                    $response->headers->set($name, (string) $value);
+                }
+            }
+
+            return $response->header('Cache-Control', 'private, no-store');
         } catch (Throwable $exception) {
             report($exception);
 

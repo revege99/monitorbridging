@@ -106,6 +106,16 @@ class AntreanFktpCancelTest extends TestCase
                 ];
         });
         Http::assertSentCount(1);
+        $response->assertHeader('X-BPJS-Debug-Url', self::TARGET)
+            ->assertHeader('X-BPJS-Debug-Cons-Id', 'test-cons')
+            ->assertHeader('X-BPJS-Debug-User-Key', 'configured (hidden)')
+            ->assertHeader('X-BPJS-Payload-Tanggal', '2026-11-07')
+            ->assertHeader('X-BPJS-Payload-Kode-Poli', '001')
+            ->assertHeader('X-BPJS-Payload-Nomor-Kartu', '0000045258563')
+            ->assertHeader('X-BPJS-Payload-Alasan', rawurlencode('Terjadi perubahan jadwal dokter'));
+        $this->assertFalse($response->headers->has('X-BPJS-Payload-Status'));
+        $this->assertFalse($response->headers->has('X-BPJS-Payload-Waktu'));
+        $this->assertStringNotContainsString('antrol-key', json_encode($response->headers->all()));
         $this->assertStringNotContainsString('antrol-key', $response->getContent());
         $log = DB::connection('central')->table('service_logs')->first();
         $this->assertSame('antrean_fktp_batal', $log->service_name);
@@ -125,7 +135,9 @@ class AntreanFktpCancelTest extends TestCase
         Http::fake([self::TARGET => Http::response(['metadata' => ['code' => 201, 'message' => 'Antrean tidak ditemukan']])]);
         $this->withHeader('X-Integration-Token', 'test-token')->postJson(self::URL, [
             'no_rawat' => '2026/11/07/000001', 'alasan' => 'Perubahan jadwal',
-        ])->assertOk()->assertJsonPath('metadata.code', 201);
+        ])->assertOk()->assertJsonPath('metadata.code', 201)
+            ->assertHeader('X-BPJS-Debug-Url', self::TARGET)
+            ->assertHeader('X-BPJS-Payload-Kode-Poli', '001');
         $this->assertSame('failed', DB::connection('central')->table('service_logs')->value('status'));
     }
 
@@ -154,5 +166,16 @@ class AntreanFktpCancelTest extends TestCase
             'no_rawat' => '2026/11/07/000001', 'alasan' => 'Perubahan jadwal',
         ])->assertOk()->assertJsonPath('metadata.code', 502);
         $this->assertSame('failed', DB::connection('central')->table('service_logs')->value('status'));
+    }
+
+    public function test_reason_debug_header_safely_encodes_newlines_and_unicode(): void
+    {
+        Http::fake([self::TARGET => Http::response(['metadata' => ['code' => 200, 'message' => 'Ok']])]);
+        $reason = "Perubahan jadwal\nDokter berhalangan — konfirmasi pasien";
+        $response = $this->withHeader('X-Integration-Token', 'test-token')->postJson(self::URL, [
+            'no_rawat' => '2026/11/07/000001', 'alasan' => $reason,
+        ])->assertOk();
+        $this->assertSame($reason, rawurldecode($response->headers->get('X-BPJS-Payload-Alasan')));
+        Http::assertSent(fn ($request) => $request['alasan'] === $reason);
     }
 }
