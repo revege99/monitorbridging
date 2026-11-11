@@ -12,7 +12,8 @@ Halaman monitor service Antrean yang ada tetap khusus Antrean.
    Organization ID, Location ID. Data disimpan di `ss_config` pada database
    SIMRS klinik terpilih, memakai koneksi database klinik yang terdaftar.
    Secret disimpan sesuai format tabel lama agar kompatibel dengan integrasi
-   SIMRS yang sudah ada, dan tidak ditampilkan/di-flash ke sesi oleh UI.
+   SIMRS yang sudah ada. Secret ditampilkan pada form Edit untuk superadmin,
+   tetapi tidak di-flash ke sesi ketika validasi gagal.
 3. Isi Base URL Satu Sehat: Auth URL endpoint token lengkap dan FHIR URL root
    layanan. Keduanya wajib HTTPS dan harus berada pada lingkungan yang sama.
    Tidak ada URL produksi hardcoded dalam worker.

@@ -76,7 +76,7 @@ class SatuSehatConfigurationTest extends TestCase
         $controller->update($this->request($this->data() + ['id' => 8]), '7');
         $this->assertDatabaseHas('ss_config', ['id' => 7], 'clinic');
         $html = view('configurations.satu-sehat.form', ['configuration' => $rows->first()])->render();
-        $this->assertStringNotContainsString('secret-plain-existing', $html);
+        $this->assertStringContainsString('value="secret-plain-existing"', $html);
         $this->assertStringNotContainsString('name="clinic_id"', $html);
     }
 
