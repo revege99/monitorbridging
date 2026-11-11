@@ -1,13 +1,27 @@
 @echo off
 setlocal
 title Service Satu Sehat
-cd /d "%~dp0"
-
-if not exist "artisan" (
-    echo [ERROR] File artisan tidak ditemukan.
-    echo Pastikan file BAT berada di folder utama proyek Laravel.
+set "SATUSEHAT_PROJECT="
+if defined SATUSEHAT_PROJECT_DIR call :try_project "%SATUSEHAT_PROJECT_DIR%"
+call :try_project "%~dp0"
+call :try_project "%~dp0.."
+call :try_project "%CD%"
+call :try_project "C:\laragon\www\monitorbridging"
+call :try_project "C:\laragon\www\monitoring-bridging"
+if not defined SATUSEHAT_PROJECT (
+    echo [ERROR] Folder proyek Satu Sehat belum ditemukan.
+    echo Lokasi BAT: "%~dp0"
+    echo Letakkan BAT di folder proyek yang berisi artisan.
+    echo Atau set SATUSEHAT_PROJECT_DIR ke lokasi proyek Laravel tersebut.
     goto :finish
 )
+pushd "%SATUSEHAT_PROJECT%"
+if errorlevel 1 (
+    echo [ERROR] Folder proyek tidak dapat dibuka: "%SATUSEHAT_PROJECT%"
+    goto :finish
+)
+set "SATUSEHAT_PROJECT_OPENED=1"
+echo Folder proyek: "%CD%"
 
 if not exist ".env" (
     echo [ERROR] File .env tidak ditemukan.
@@ -50,7 +64,19 @@ echo PHP    : %PHP_BIN%
 echo ==============================================
 echo.
 
-rem Worker memakai file lock eksklusif; jangan membersihkan cache global.
+rem Jangan hapus lock jika worker yang sama memang masih aktif.
+powershell.exe -NoProfile -ExecutionPolicy Bypass -Command ^
+    "$running = Get-CimInstance Win32_Process | Where-Object { $_.Name -eq 'php.exe' -and $_.CommandLine -match 'artisan\s+service:satu-sehat(?:\s|$)' }; if ($running) { exit 10 }"
+
+if errorlevel 10 (
+    echo [INFO] Service Satu Sehat sudah berjalan.
+    echo Tidak ada service baru yang dijalankan.
+    goto :finish
+)
+
+rem Lock Satu Sehat dikelola worker; cache global tidak perlu dibersihkan.
+echo Menjalankan service Satu Sehat...
+echo.
 "%PHP_BIN%" artisan service:satu-sehat
 
 if errorlevel 1 (
@@ -62,7 +88,15 @@ if errorlevel 1 (
 echo.
 echo Service berhenti. Tekan tombol apa saja untuk menutup.
 pause >nul
+if defined SATUSEHAT_PROJECT_OPENED popd
 endlocal
+exit /b
+
+:try_project
+if defined SATUSEHAT_PROJECT exit /b
+if not exist "%~1\artisan" exit /b
+if not exist "%~1\app\Console\Commands\SatuSehatCommand.php" exit /b
+for %%D in ("%~1") do set "SATUSEHAT_PROJECT=%%~fD"
 exit /b
 
 :try_php
@@ -71,4 +105,3 @@ if not exist "%~1" exit /b
 "%~1" -r "exit(in_array('mysql', PDO::getAvailableDrivers(), true) ? 0 : 1);" >nul 2>&1
 if not errorlevel 1 set "PHP_BIN=%~1"
 exit /b
-

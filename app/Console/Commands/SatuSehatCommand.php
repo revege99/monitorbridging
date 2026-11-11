@@ -16,7 +16,7 @@ class SatuSehatCommand extends Command
         {--once : Jalankan satu kali scan}
         {--check : Periksa konfigurasi dan tabel kontrol tanpa mengirim data}
         {--interval=30 : Jeda scan dalam detik, minimal 5}
-        {--from= : Tanggal awal YYYY-MM-DD, default hari ini WIB}
+        {--from= : Tanggal awal YYYY-MM-DD, default kemarin WIB}
         {--to= : Tanggal akhir YYYY-MM-DD, default hari ini WIB}';
 
     protected $description = 'Kirim resource Satu Sehat untuk klinik instalasi aktif';
@@ -115,7 +115,11 @@ class SatuSehatCommand extends Command
     {
         $dates = [];
         foreach (['from', 'to'] as $option) {
-            $value = $this->option($option) ?: now('Asia/Jakarta')->toDateString();
+            $defaultDate = now('Asia/Jakarta');
+            if ($option === 'from') {
+                $defaultDate->subDay();
+            }
+            $value = $this->option($option) ?: $defaultDate->toDateString();
             if (! preg_match('/^\d{4}-\d{2}-\d{2}$/D', $value)
                 || CarbonImmutable::parse($value, 'Asia/Jakarta')->format('Y-m-d') !== $value) {
                 throw new \InvalidArgumentException('Format tanggal harus YYYY-MM-DD.');

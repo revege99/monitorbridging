@@ -47,6 +47,8 @@ class SatuSehatServiceTest extends TestCase
             $table->string('status');
             $table->dateTime('started_at')->nullable();
             $table->dateTime('last_heartbeat_at')->nullable();
+            $table->dateTime('finished_at')->nullable();
+            $table->text('message')->nullable();
             foreach (['processed', 'succeeded', 'failed'] as $name) {
                 $table->integer($name)->default(0);
             }
@@ -266,5 +268,25 @@ class SatuSehatServiceTest extends TestCase
         Http::assertSent(fn ($request) => ($request->data()['resourceType'] ?? null) === 'Observation' && $request['effectiveDateTime'] === '2026-11-11T01:45:00+00:00');
         Http::assertSent(fn ($request) => ($request->data()['resourceType'] ?? null) === 'MedicationRequest' && $request['category'][0]['coding'][0]['code'] === 'inpatient');
         $this->assertSame(0, (int) $this->run->fresh()->failed);
+    }
+
+    public function test_default_scan_includes_yesterday_across_month_boundary_in_jakarta(): void
+    {
+        $this->travelTo(\Carbon\CarbonImmutable::parse('2026-11-01 00:15:00', 'Asia/Jakarta'));
+        $this->installation->clinic_id = 987654;
+        $this->mock(ActiveInstallation::class, function ($mock) {
+            $mock->shouldReceive('resolveForPdf')->once()->andReturn($this->installation);
+            $mock->shouldReceive('configureClinicDatabase')->once();
+        });
+        $this->mock(SatuSehatService::class, function ($mock) {
+            $mock->shouldReceive('configure')->once()->with($this->installation);
+            $mock->shouldReceive('scan')->once()->withArgs(function ($installation, $run, $from, $to, $output) {
+                $this->assertSame('2026-10-31', $from);
+                $this->assertSame('2026-11-01', $to);
+                return true;
+            });
+        });
+        $this->artisan('service:satu-sehat', ['--once' => true])->assertSuccessful();
+        Http::assertNothingSent();
     }
 }

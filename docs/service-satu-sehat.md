@@ -46,7 +46,7 @@ Setelah konfigurasi siap, jalankan BAT dengan klik dua kali untuk worker berulan
 PHP harus versi yang didukung proyek (minimal 8.3) dan memiliki PDO MySQL.
 BAT menggunakan PHP_BIN override, Laragon, PATH, lalu XAMPP seperti launcher Antrean.
 
-Default scan hari ini WIB, diperbarui otomatis ketika berganti hari, interval
+Default scan tanggal registrasi kemarin sampai hari ini WIB, diperbarui otomatis ketika berganti hari, interval
 30 detik. Backfill harus eksplisit, misalnya:
 
 ```shell
