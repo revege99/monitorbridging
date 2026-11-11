@@ -148,6 +148,18 @@ bukan jaminan seluruh resource diterima SATUSEHAT.
 
 ## Verifikasi
 
+Terminal dikelompokkan per no_rawat, dengan urutan Encounter, Condition,
+Observation (Suhu, Respirasi, Nadi, SpO2, GCS, Tinggi Badan, Berat Badan, Lingkar
+Perut, Tekanan Darah, Kesadaran), Procedure, ClinicalImpression, MedicationRequest,
+MedicationDispense, MedicationStatement, lalu CarePlan. Seluruh item resep pada
+satu tahap diselesaikan sebelum tahap obat berikutnya.
+Status MENGIRIM, BERHASIL TERKIRIM beserta ID, SUDAH TERKIRIM, jeda retry, dan
+rekonsiliasi ditampilkan sesuai keadaan. Nilai Observation hanya ditampilkan
+sebagai DATA TERKIRIM setelah POST baru berhasil; nilai sumber terkini tidak
+diklaim sebagai isi resource lama. Scan ulang sukses hanya mencetak status ke
+terminal tanpa menambah log database. Judul tahap tetap muncul jika belum ada
+data untuk tahap tersebut.
+
 ```shell
 php artisan test --filter=SatuSehatServiceTest
 ```

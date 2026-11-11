@@ -8,6 +8,7 @@ use App\Models\SatuSehatConfiguration;
 use App\Models\ServiceRun;
 use App\Services\ActiveInstallation;
 use App\Services\SatuSehatService;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -272,7 +273,7 @@ class SatuSehatServiceTest extends TestCase
 
     public function test_default_scan_includes_yesterday_across_month_boundary_in_jakarta(): void
     {
-        $this->travelTo(\Carbon\CarbonImmutable::parse('2026-11-01 00:15:00', 'Asia/Jakarta'));
+        $this->travelTo(CarbonImmutable::parse('2026-11-01 00:15:00', 'Asia/Jakarta'));
         $this->installation->clinic_id = 987654;
         $this->mock(ActiveInstallation::class, function ($mock) {
             $mock->shouldReceive('resolveForPdf')->once()->andReturn($this->installation);
@@ -283,10 +284,42 @@ class SatuSehatServiceTest extends TestCase
             $mock->shouldReceive('scan')->once()->withArgs(function ($installation, $run, $from, $to, $output) {
                 $this->assertSame('2026-10-31', $from);
                 $this->assertSame('2026-11-01', $to);
+
                 return true;
             });
         });
         $this->artisan('service:satu-sehat', ['--once' => true])->assertSuccessful();
         Http::assertNothingSent();
+    }
+
+    public function test_terminal_names_observations_and_all_items_follow_resource_order(): void
+    {
+        foreach (['resep_dokter', 'satu_sehat_mapping_obat', 'satu_sehat_medication', 'detail_pemberian_obat', 'aturan_pakai'] as $table) {
+            $item = (array) DB::connection('clinic')->table($table)->first();
+            $item['kode_brng'] = 'B2';
+            DB::connection('clinic')->table($table)->insert($item);
+        }
+        $messages = [];
+        $output = function ($level, $message) use (&$messages) {
+            $messages[] = $message;
+        };
+        $this->fake();
+        $this->service->scan($this->installation, $this->run, '2026-11-11', '2026-11-11', $output);
+        $text = implode("\n", $messages);
+        $this->assertStringContainsString('Observation Tinggi Badan | BERHASIL TERKIRIM', $text);
+        $this->assertStringContainsString('Observation Suhu | DATA TERKIRIM: 36.5 Cel', $text);
+        $ranks = ['Encounter' => 1, 'Condition' => 2, 'Observation' => 3, 'Procedure' => 4,
+            'ClinicalImpression' => 5, 'MedicationRequest' => 6, 'MedicationDispense' => 7, 'MedicationStatement' => 8, 'CarePlan' => 9];
+        $order = Http::recorded(fn ($request) => str_contains($request->url(), '/fhir/') && $request->method() === 'POST')
+            ->map(fn ($pair) => $ranks[$pair[0]['resourceType']])->values()->all();
+        $sorted = $order;
+        sort($sorted);
+        $this->assertSame($sorted, $order);
+        $this->assertSame(2, count(array_filter($order, fn ($rank) => $rank === 6)));
+        $messages = [];
+        $this->service->scan($this->installation, $this->run, '2026-11-11', '2026-11-11', $output);
+        $text = implode("\n", $messages);
+        $this->assertStringContainsString('Observation Suhu | SUDAH TERKIRIM | ID:', $text);
+        $this->assertStringNotContainsString('| MENGIRIM', $text);
     }
 }

@@ -88,6 +88,7 @@ class SatuSehatService
     private function visit(array $row): void
     {
         $no = $row['no_rawat'];
+        $this->terminal('info', "========== KUNJUNGAN {$no} | {$row['tgl_registrasi']} | {$row['nm_poli']} ==========");
         $patient = $this->identity('Patient', $row['nik_pasien']);
         $practitioner = $this->identity('Practitioner', $row['nik_dokter']);
         $start = $this->time($row['tgl_registrasi'], $row['jam_reg']);
@@ -116,14 +117,19 @@ class SatuSehatService
         }
         $context = ['subject' => ['reference' => "Patient/{$patient}"], 'encounter' => ['reference' => "Encounter/{$encounter}"]];
         // Setiap tahap independen: belum ada diagnosa tidak menghalangi tanda vital/obat.
-        foreach (['conditions', 'observations', 'procedures', 'clinical', 'medications', 'carePlans'] as $stage) {
+        foreach (['conditions' => '02 Condition', 'observations' => '03 Observation', 'procedures' => '04 Procedure',
+            'clinical' => '05 ClinicalImpression', 'medicationRequests' => '06 MedicationRequest',
+            'medicationDispenses' => '07 MedicationDispense', 'medicationStatements' => '08 MedicationStatement',
+            'carePlans' => '09 CarePlan'] as $stage => $label) {
+            $this->terminal('info', "{$no} | --- {$label} ---");
             try {
                 $this->$stage($row, $context, $practitioner);
             } catch (Throwable $e) {
                 $this->run->increment('failed');
-                $this->log('warning', 'failed', $no, "Tahap {$stage} belum dapat diproses; periksa data dan tabel pendukung.");
+                $this->log('warning', 'failed', $no, "{$label}: belum dapat diproses; periksa data dan tabel pendukung.");
             }
         }
+        $this->terminal('info', "========== SELESAI {$no} ==========");
     }
 
     private function identity(string $type, string $nik): string
@@ -278,7 +284,22 @@ class SatuSehatService
         }
     }
 
-    private function medications(array $row, array $context, string $practitioner): void
+    private function medicationRequests(array $row, array $context, string $practitioner): void
+    {
+        $this->medications($row, $context, $practitioner, 'request');
+    }
+
+    private function medicationDispenses(array $row, array $context, string $practitioner): void
+    {
+        $this->medications($row, $context, $practitioner, 'dispense');
+    }
+
+    private function medicationStatements(array $row, array $context, string $practitioner): void
+    {
+        $this->medications($row, $context, $practitioner, 'statement');
+    }
+
+    private function medications(array $row, array $context, string $practitioner, string $phase): void
     {
         $items = DB::connection('clinic')->table('resep_obat as ro')
             ->join('resep_dokter as rd', 'rd.no_resep', '=', 'ro.no_resep')
@@ -306,12 +327,23 @@ class SatuSehatService
                 'medicationReference' => $medication, 'authoredOn' => $this->time($item['tgl_peresepan'], $item['jam_peresepan']),
                 'requester' => ['reference' => "Practitioner/{$author}"], 'dosageInstruction' => [$dosage],
                 'dispenseRequest' => ['quantity' => $this->quantity($item, (float) $item['jml']), 'performer' => ['reference' => 'Organization/'.$this->organization]]];
-            $request = $this->send($no, 'MedicationRequest', 'medicationrequest:'.$itemKey, $payload,
-                ['satu_sehat_medicationrequest_new', $key, 'id_medicationrequest', [], 'Berhasil']);
+            if ($phase === 'request') {
+                $this->send($no, 'MedicationRequest', 'medicationrequest:'.$itemKey, $payload,
+                    ['satu_sehat_medicationrequest_new', $key, 'id_medicationrequest', [], 'Berhasil']);
+
+                continue;
+            }
+            $request = DB::connection('clinic')->table('satu_sehat_service_resources')
+                ->where('resource_key', hash('sha256', $this->organization.'|'.$no.'|medicationrequest:'.$itemKey))
+                ->where('status', 'success')->value('resource_id');
             if (! $request) {
                 continue;
             }
-            $this->dispenses($row, $context, $item, $request, $medication);
+            if ($phase === 'dispense') {
+                $this->dispenses($row, $context, $item, $request, $medication);
+
+                continue;
+            }
             // Jangan menyatakan pasien telah memahami obat hanya dari keberadaan resep.
             // MedicationStatement hanya dibuat setelah ada tanggal penyerahan nyata.
             if (filled($item['tgl_penyerahan'] ?? null) && $item['tgl_penyerahan'] !== '0000-00-00') {
@@ -384,12 +416,14 @@ class SatuSehatService
 
     private function send(string $no, string $type, string $localKey, array $payload, array $legacy): ?string
     {
+        $label = $this->resourceLabel($type, $localKey);
         $this->run->update(['last_heartbeat_at' => now()]);
         $key = hash('sha256', $this->organization.'|'.$no.'|'.$localKey);
         $journal = DB::connection('clinic')->table('satu_sehat_service_resources');
         $existing = (clone $journal)->where('resource_key', $key)->first();
         if ($existing?->status === 'success') {
             $this->mirror($legacy, $existing->resource_id);
+            $this->terminal('success', "{$no} | {$label} | SUDAH TERKIRIM | ID: {$existing->resource_id}");
 
             return $existing->resource_id;
         }
@@ -402,14 +436,19 @@ class SatuSehatService
                     throw new RuntimeException('Pasien encounter lama tidak cocok dengan hasil MPI.');
                 }
                 $this->record($key, $no, $type, 'success', $old->$idColumn);
+                $this->terminal('success', "{$no} | {$label} | SUDAH TERKIRIM (data lama) | ID: {$old->$idColumn}");
 
                 return $old->$idColumn;
             }
         }
         if ($existing && in_array($existing->status, ['pending', 'uncertain'], true)) {
+            $this->terminal('warning', "{$no} | {$label} | MENUNGGU REKONSILIASI ({$existing->status})");
+
             return null;
         }
         if ($existing && $existing->last_attempt_at && CarbonImmutable::parse($existing->last_attempt_at, 'Asia/Jakarta')->addMinutes(5)->isFuture()) {
+            $this->terminal('warning', "{$no} | {$label} | MENUNGGU JEDA COBA ULANG");
+
             return null;
         }
         // Encounter dapat direkonsiliasi lewat identifier sebelum POST.
@@ -422,6 +461,7 @@ class SatuSehatService
                 }
                 $this->record($key, $no, $type, 'success', $remote['id']);
                 $this->mirror($legacy, $remote['id']);
+                $this->terminal('success', "{$no} | {$label} | SUDAH TERKIRIM (ditemukan di server) | ID: {$remote['id']}");
 
                 return $remote['id'];
             }
@@ -439,11 +479,12 @@ class SatuSehatService
             return null;
         }
         try {
+            $this->terminal('info', "{$no} | {$label} | MENGIRIM");
             $response = $this->client->create($type, $payload);
         } catch (Throwable $e) {
             $this->record($key, $no, $type, 'uncertain');
             $this->run->increment('failed');
-            $this->log('warning', 'uncertain', $no, "{$type}: hasil pengiriman belum pasti; perlu rekonsiliasi.");
+            $this->log('warning', 'uncertain', $no, "{$label}: hasil pengiriman belum pasti; perlu rekonsiliasi.");
 
             return null;
         }
@@ -460,8 +501,21 @@ class SatuSehatService
             }
         }
         $hint = $issues ? ' Kode validasi: '.implode(', ', array_unique($issues)).'.' : '';
-        $this->log($success ? 'success' : 'warning', $status, $no, "{$type}: {$status} (HTTP {$response->status()}).".$hint, $response->status());
+        $result = $success ? 'BERHASIL TERKIRIM | ID: '.$id : strtoupper($status);
+        $this->log($success ? 'success' : 'warning', $status, $no, "{$label} | {$result} | HTTP {$response->status()}.".$hint, $response->status());
         if ($success) {
+            if ($type === 'Observation') {
+                $value = data_get($payload, 'valueQuantity.value');
+                $unit = data_get($payload, 'valueQuantity.unit', '');
+                if ($value === null && isset($payload['component'])) {
+                    $value = implode('/', array_column(array_column($payload['component'], 'valueQuantity'), 'value'));
+                    $unit = 'mmHg';
+                }
+                $value ??= data_get($payload, 'valueCodeableConcept.text');
+                if ($value !== null) {
+                    $this->terminal('info', "{$no} | {$label} | DATA TERKIRIM: {$value} {$unit}");
+                }
+            }
             $this->mirror($legacy, $id);
         }
 
@@ -475,6 +529,26 @@ class SatuSehatService
             ['resource_key' => $key, 'no_rawat' => $no, 'resource_type' => $type, 'resource_id' => $id,
                 'status' => $status, 'http_code' => $httpCode, 'last_attempt_at' => $now, 'created_at' => $now, 'updated_at' => $now],
         ], ['resource_key'], ['resource_id', 'status', 'http_code', 'last_attempt_at', 'updated_at']);
+    }
+
+    private function resourceLabel(string $type, string $key): string
+    {
+        if ($type === 'Observation') {
+            $name = explode(':', $key)[1] ?? '';
+            $labels = ['suhu' => 'Suhu', 'respirasi' => 'Respirasi', 'nadi' => 'Nadi', 'spo2' => 'SpO2',
+                'gcs' => 'GCS', 'tinggi' => 'Tinggi Badan', 'berat' => 'Berat Badan',
+                'lingkarperut' => 'Lingkar Perut', 'tensi' => 'Tekanan Darah', 'kesadaran' => 'Kesadaran'];
+
+            return 'Observation '.($labels[$name] ?? $name);
+        }
+
+        return $type;
+    }
+
+    private function terminal(string $level, string $message): void
+    {
+        // Status scan ulang hanya ke terminal, tidak menumpuk log database.
+        ($this->output)($level, preg_replace('/[\r\n\x1b]/', ' ', $message));
     }
 
     private function mirror(array $legacy, string $id): void
