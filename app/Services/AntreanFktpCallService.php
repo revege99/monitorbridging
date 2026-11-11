@@ -76,11 +76,21 @@ class AntreanFktpCallService
         }
 
         $json = $response->json();
+        $bpjsSucceeded = is_array($json) && (int) data_get($json, 'metadata.code') === 200;
         if (!is_array($json)) {
             $json = ['metadata' => ['code' => $response->status(), 'message' => 'Response BPJS bukan JSON']];
         }
         $code = (int) data_get($json, 'metadata.code', $response->status());
         $message = (string) data_get($json, 'metadata.message', 'Tidak ada pesan');
+        if ($bpjsSucceeded) {
+            $column = $status === 1 ? 'waktu_hadir' : 'waktu_tidak_hadir';
+            $attendance = DB::connection('clinic')->table('antrean_fktp_attendances');
+            $attendance->insertOrIgnore(['no_rawat' => $noRawat]);
+            DB::connection('clinic')->table('antrean_fktp_attendances')
+                ->where('no_rawat', $noRawat)
+                ->whereNull($column)
+                ->update([$column => now('Asia/Jakarta')]);
+        }
         $label = $status === 2 ? 'Panggil antrean tidak hadir' : 'Panggil antrean hadir';
         $this->log($installation, $noRawat, $code === 200 ? 'success' : 'warning', $code === 200 ? 'success' : 'failed', "{$label}: {$code} | {$message}", $code, $started);
         $json['debug'] = $debug;

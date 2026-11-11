@@ -49,9 +49,17 @@ Base URL Antrean Batal**, termasuk service name dan `/antrean/batal`.
 URL tidak ditambahi path lagi. Field boleh kosong bila fitur batal belum digunakan.
 URL kosong akan membuat permintaan batal gagal; URL Add/Panggil tidak diubah.
 
-Tidak ada perubahan status/hapus kunjungan lokal secara otomatis dan tidak ada
-retry otomatis ke BPJS. Log request yang dikirim disimpan di `central.service_logs`
+Tidak ada retry otomatis ke BPJS. Log request yang dikirim disimpan di `central.service_logs`
 dengan `service_name = antrean_fktp_batal` dan referensi `no_rawat`.
+Jika respons BPJS memiliki `metadata.code = 200`, aplikasi juga menyimpan
+`no_rawat`, `status = success`, dan `waktu_batal` (tanggal dan jam UTC+07:00)
+ke `clinic.antrean_fktp_cancellations`, yaitu database SIMRS klinik aktif,
+mengikuti koneksi penyimpanan `config_pcare`. Waktu dicatat saat respons sukses diterima.
+Pada respons sukses tersebut, `reg_periksa.stts` untuk `no_rawat` yang sama
+diubah menjadi `Batal`. Penyimpanan hasil dan update status memakai satu transaksi
+database SIMRS agar keduanya tersimpan bersama atau dibatalkan bersama jika gagal.
+Respons BPJS selain kode 200 tidak mengubah status kunjungan.
+Setiap respons sukses menambah satu baris; respons gagal tidak disimpan di tabel ini.
 Respons tidak menampilkan kredensial BPJS.
 
 ## Struktur file
@@ -141,6 +149,19 @@ Jalankan migration berikut di database central, lalu isi URL batal dari menu:
 php artisan migrate --path=database/migrations/2026_11_07_000001_add_antrean_batal_url_to_base_url_configurations.php
 php artisan route:clear
 ```
+
+Jalankan `database/sql/antrean_fktp_cancellations.sql` pada setiap database SIMRS
+sebelum menggunakan fitur pembatalan. Migration central tanggal 2026-11-11
+adalah tabel versi lama; tabel itu tidak lagi dipakai dan tidak dihapus otomatis.
+Jika tabel sudah ada pada database SIMRS dengan dua kolom, tambahkan kolom dengan:
+
+```sql
+ALTER TABLE antrean_fktp_cancellations
+    ADD COLUMN waktu_batal DATETIME NULL;
+```
+
+Kolom nullable pada tabel lama mempertahankan baris lama yang waktu pembatalannya
+tidak diketahui. Baris baru selalu diisi waktunya oleh aplikasi.
 
 Test menggunakan SQLite in-memory dan HTTP fake; tidak membatalkan antrean BPJS nyata:
 

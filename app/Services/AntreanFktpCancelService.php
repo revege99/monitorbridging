@@ -74,6 +74,18 @@ class AntreanFktpCancelService
         }
         $code = (int) data_get($json, 'metadata.code', $response->status());
         $message = (string) data_get($json, 'metadata.message', 'Tidak ada pesan');
+        if ((int) data_get($json, 'metadata.code') === 200) {
+            DB::connection('clinic')->transaction(function () use ($noRawat) {
+                DB::connection('clinic')->table('antrean_fktp_cancellations')->insert([
+                    'no_rawat' => $noRawat,
+                    'status' => 'success',
+                    'waktu_batal' => now('Asia/Bangkok'),
+                ]);
+                DB::connection('clinic')->table('reg_periksa')
+                    ->where('no_rawat', $noRawat)
+                    ->update(['stts' => 'Batal']);
+            });
+        }
         $label = 'Batal antrean';
         $this->log($installation, $noRawat, $code === 200 ? 'success' : 'warning', $code === 200 ? 'success' : 'failed', "{$label}: {$code} | {$message}", $code, $started);
 
