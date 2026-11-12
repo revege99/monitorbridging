@@ -70,7 +70,8 @@ class MedicalRecordFormat
 
     public function next(): string
     {
-        // Semua format numerik lama ikut dihitung supaya toggle pemisah tidak mengulang urutan.
+        // Angka terbesar + 1 dari pasien, tanpa prefix tetap atau acuan set_no_rkm_medis.
+        // Pemisah dan nol di depan hanya format tampilan, bukan pembatas urutan.
         $last = $this->numericPatients()->selectRaw('MAX('.$this->numericSql().') AS last_number')->value('last_number');
 
         return $this->format(((int) $last) + 1);

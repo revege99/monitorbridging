@@ -19,6 +19,11 @@ Generator mencari angka terbesar di seluruh nomor RM numerik SIMRS, termasuk
 format lama dengan tanda strip, titik atau garis miring. Contoh: nomor terakhir
 `00-00-99` menghasilkan `000100` saat pemisah dimatikan, bukan memulai dari 1.
 Nomor dengan prefix huruf tidak digunakan sebagai dasar urutan numerik.
+Nol di depan bukan prefix tetap. Untuk 8 digit: `00025973` dilanjutkan ke
+`00025974`, `00099999` ke `00100000`, dan `01712214` ke `01712215`.
+Jika `01712214` ada, nomor itu menjadi acuan meskipun ada pasien dengan nomor
+`00025973` yang dimasukkan lebih baru. Generator tidak membaca maupun mengubah
+`set_no_rkm_medis`.
 Jika angka berikutnya melampaui kapasitas digit, aplikasi menolak pembuatan dan
 meminta penambahan digit; tidak memotong angka atau memulai ulang dari nol.
 

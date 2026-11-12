@@ -56,6 +56,7 @@
                         <p class="text-xs font-semibold text-blue-700">PRATINJAU NOMOR PERTAMA</p>
                         <p id="rm-preview" class="mt-1 font-mono text-2xl font-semibold text-blue-900" aria-live="polite">{{ $preview }}</p>
                         <p class="mt-2 text-xs text-slate-600">Nomor berikutnya melanjutkan nomor numerik terbesar di SIMRS, termasuk format lama yang memakai pemisah. Pratinjau ini bukan nomor yang dipesan.</p>
+                        <p class="mt-1 text-xs text-slate-600">Tidak ada prefix tetap: untuk 8 digit, 00099999 dilanjutkan menjadi 00100000.</p>
                     </div>
                     <button type="submit" class="mt-5 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white">Simpan Pengaturan</button>
                 </form>

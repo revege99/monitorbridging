@@ -79,6 +79,24 @@ class KioskConfigurationTest extends TestCase
         }
     }
 
+    public function test_eight_digit_sequence_uses_largest_number_without_a_fixed_prefix(): void
+    {
+        (new KioskConfigurationController)->update($this->request($this->settings(['rm_digits' => 8, 'rm_use_separator' => 0])));
+        $format = new MedicalRecordFormat(KioskConfiguration::current());
+        DB::connection('clinic')->table('pasien')->insert([
+            ['no_rkm_medis' => '00025971'], ['no_rkm_medis' => '00025972'], ['no_rkm_medis' => '00025973'],
+        ]);
+        $this->assertSame('00025974', $format->next());
+        DB::connection('clinic')->table('pasien')->insert(['no_rkm_medis' => '00099999']);
+        $this->assertSame('00100000', $format->next());
+        DB::connection('clinic')->table('pasien')->insert(['no_rkm_medis' => '01712214']);
+        $this->assertSame('01712215', $format->next());
+        // Baris yang dimasukkan belakangan tidak mengalahkan nilai numerik terbesar.
+        DB::connection('clinic')->table('pasien')->insert(['no_rkm_medis' => '00025975']);
+        $this->assertSame('01712215', $format->next());
+        $this->assertFalse(Schema::connection('clinic')->hasTable('set_no_rkm_medis'));
+    }
+
     public function test_invalid_grouping_or_excessive_length_cannot_be_saved(): void
     {
         foreach ([$this->settings(['rm_groups' => '2-2']), $this->settings(['rm_digits' => 12, 'rm_groups' => '2-2-2-2-2-2']),
