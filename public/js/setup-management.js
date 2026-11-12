@@ -9,11 +9,11 @@
     while (heading.firstChild) headingContent.append(heading.firstChild);
     heading.append(headingContent);
     const add = toolbar.querySelector('[data-modal-open]');
-    add.className = 'pcare-add';
+    if (add) add.className = 'pcare-add';
     const tools = document.createElement('div');
     tools.className = 'pcare-tools';
     tools.innerHTML = '<label class="pcare-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="10" r="7"/><path d="m15 15 5 5"/></svg><input id="pcare-search" type="search" placeholder="Cari data..." aria-label="Cari data pada tabel"></label>';
-    tools.append(add);
+    if (add) tools.append(add);
     toolbar.append(tools);
     const table = card.querySelector('table');
     table.className = 'pcare-table';
