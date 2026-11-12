@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use App\Services\LocalClinic;
 use App\Services\BpjsParticipantService;
 use App\Services\PcareOnlineRegistrationService;
+use App\Models\KioskConfiguration;
+use App\Services\MedicalRecordFormat;
+use Illuminate\Support\Facades\Cache;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -23,7 +26,8 @@ class KioskController extends Controller
     public function index(): View
     {
         $installation = $this->active->resolve();
-        return view('kiosk.index', ['clinic' => $installation->clinic]);
+        return view('kiosk.index', ['clinic' => $installation->clinic,
+            'rmFormat' => (new MedicalRecordFormat(KioskConfiguration::current()))->clientSettings()]);
     }
 
     public function lookup(Request $request): JsonResponse
@@ -54,6 +58,7 @@ class KioskController extends Controller
                 'participant_token' => Crypt::encryptString(json_encode(['participant' => $participant, 'issued_at' => now()->timestamp, 'database_fingerprint' => $installation->fingerprint()], JSON_UNESCAPED_UNICODE)),
                 'patient' => $patient ? $this->patient($patient) : null,
                 'suggested_rm' => !$patient ? $this->nextMedicalRecord() : null,
+                'rm_format' => (new MedicalRecordFormat(KioskConfiguration::current()))->clientSettings(),
                 'selection' => $this->selectionOptions($data['mode']),
             ]);
         } catch (\Throwable $e) {
@@ -64,9 +69,10 @@ class KioskController extends Controller
 
     public function createPatient(Request $request): JsonResponse
     {
+        $format = new MedicalRecordFormat(KioskConfiguration::current());
         $data = $request->validate([
             'participant_token' => ['required', 'string'],
-            'no_rkm_medis' => ['required', 'string', 'regex:/^[0-9]{2}-[0-9]{2}-[0-9]{2}$/'],
+            'no_rkm_medis' => ['required', 'string', 'max:15', 'regex:~^'.$format->pattern().'$~D'],
             'province_name' => ['required', 'string', 'max:30'],
             'regency_name' => ['required', 'string', 'max:60'],
             'district_name' => ['required', 'string', 'max:60'],
@@ -74,7 +80,7 @@ class KioskController extends Controller
             'alamat_detail' => ['required', 'string', 'max:180'],
         ], [
             'no_rkm_medis.required' => 'Nomor rekam medis wajib diisi.',
-            'no_rkm_medis.regex' => 'Format nomor rekam medis harus 00-00-00.',
+            'no_rkm_medis.regex' => 'Format nomor rekam medis harus seperti '.$format->format(1).'. Muat ulang data peserta jika pengaturan baru berubah.',
         ]);
 
         try {
@@ -86,12 +92,13 @@ class KioskController extends Controller
             $installation = $this->active->resolve();
             if (!hash_equals($installation->fingerprint(), (string) ($tokenData['database_fingerprint'] ?? ''))) throw new RuntimeException('Koneksi SIMRS pada sesi verifikasi telah berubah. Silakan verifikasi ulang.');
             $this->active->configureClinicDatabase($installation);
-            $patient = DB::connection('clinic')->transaction(function () use ($participant, $data) {
+            $patient = Cache::lock('kiosk-patient:'.$installation->fingerprint(), 60)->block(5, function () use ($participant, $data, $format) {
+                return DB::connection('clinic')->transaction(function () use ($participant, $data, $format) {
                 $existing = $this->findPatientByParticipant($participant, true);
                 if ($existing) return $this->fillMissingParticipantIdentifiers($existing, $participant);
 
                 $rm = $data['no_rkm_medis'];
-                $rmExists = DB::connection('clinic')->table('pasien')->where('no_rkm_medis', $rm)->lockForUpdate()->exists();
+                $rmExists = $format->existsEquivalent($rm);
                 if ($rmExists) throw new RuntimeException("Nomor rekam medis {$rm} sudah digunakan. Silakan gunakan nomor lain.");
 
                 $region = [
@@ -116,6 +123,7 @@ class KioskController extends Controller
                     'propinsipj' => $data['province_name'],
                 ]);
                 return DB::connection('clinic')->table('pasien')->where('no_rkm_medis', $rm)->first();
+                });
             });
 
             $request->session()->put('kiosk_verified_rm', $patient->no_rkm_medis);
@@ -402,10 +410,7 @@ class KioskController extends Controller
 
     private function nextMedicalRecord(): string
     {
-        $last = DB::connection('clinic')->table('pasien')->whereRaw("no_rkm_medis REGEXP '^[0-9]{2}-[0-9]{2}-[0-9]{2}$'")->orderByRaw("CAST(REPLACE(no_rkm_medis, '-', '') AS UNSIGNED) DESC")->lockForUpdate()->value('no_rkm_medis');
-        $next = ((int) str_replace('-', '', (string) $last)) + 1;
-        $digits = str_pad((string) $next, 6, '0', STR_PAD_LEFT);
-        return substr($digits, 0, 2).'-'.substr($digits, 2, 2).'-'.substr($digits, 4, 2);
+        return (new MedicalRecordFormat(KioskConfiguration::current()))->next();
     }
 
     private function doctorPrefix(string $name): string

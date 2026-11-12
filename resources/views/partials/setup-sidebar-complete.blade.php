@@ -17,6 +17,7 @@
         ['label' => 'Audit Log', 'color' => 'text-amber-300', 'items' => array_map(fn($item) => [$item, '#'], ['Log Antrean BPJS','Log Bridging Pelayanan','Log Request API','Log Response API','Riwayat Retry Bridging','Aktivitas Pengguna'])],
         ['label' => 'Master Data', 'color' => 'text-violet-300', 'items' => array_map(fn($item) => [$item, '#'], ['Mapping Dokter BPJS','Mapping Poli BPJS','Mapping Diagnosa (ICD-10)','Mapping Tindakan','Mapping Status Pulang','Jadwal Dokter'])],
         ['label' => 'Konfigurasi', 'color' => 'text-slate-300', 'items' => [
+            ['Anjungan', route('configurations.kiosk.index')],
             ['Config Pcare', route('configurations.pcare.index')], ['BPJS', route('configurations.bpjs.index')], ['Satu Sehat', route('configurations.satu-sehat.index')],
             ['Base URL BPJS', route('configurations.base-url.index')], ['Base URL Satu Sehat', route('configurations.satu-sehat-base-url.index')],
         ]],
