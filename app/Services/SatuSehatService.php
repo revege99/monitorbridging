@@ -74,12 +74,18 @@ class SatuSehatService
             foreach ($rows as $row) {
                 $this->run->update(['last_heartbeat_at' => now()]);
                 $this->run->increment('processed');
+                $this->terminal('heading', str_repeat('-', 72));
+                $this->terminal('heading', 'Nama     : '.$row->nm_pasien);
+                $this->terminal('heading', 'No Rawat : '.$row->no_rawat);
+                $this->terminal('heading', 'Tanggal  : '.$row->tgl_registrasi.' | Poli: '.$row->nm_poli);
                 try {
                     $this->visit((array) $row);
                 } catch (Throwable $e) {
                     $this->run->increment('failed');
                     // Jangan tampilkan SQL, NIK, payload, token, atau response klinis.
                     $this->log('error', 'failed', $row->no_rawat, 'Kunjungan gagal diproses; periksa skema, mapping, dan koneksi SIMRS.');
+                } finally {
+                    $this->terminal('heading', '');
                 }
             }
         }, 'rp.no_rawat', 'no_rawat');
@@ -88,7 +94,6 @@ class SatuSehatService
     private function visit(array $row): void
     {
         $no = $row['no_rawat'];
-        $this->terminal('info', "========== KUNJUNGAN {$no} | {$row['tgl_registrasi']} | {$row['nm_poli']} ==========");
         $patient = $this->identity('Patient', $row['nik_pasien']);
         $practitioner = $this->identity('Practitioner', $row['nik_dokter']);
         $start = $this->time($row['tgl_registrasi'], $row['jam_reg']);
@@ -117,11 +122,10 @@ class SatuSehatService
         }
         $context = ['subject' => ['reference' => "Patient/{$patient}"], 'encounter' => ['reference' => "Encounter/{$encounter}"]];
         // Setiap tahap independen: belum ada diagnosa tidak menghalangi tanda vital/obat.
-        foreach (['conditions' => '02 Condition', 'observations' => '03 Observation', 'procedures' => '04 Procedure',
-            'clinical' => '05 ClinicalImpression', 'medicationRequests' => '06 MedicationRequest',
-            'medicationDispenses' => '07 MedicationDispense', 'medicationStatements' => '08 MedicationStatement',
-            'carePlans' => '09 CarePlan'] as $stage => $label) {
-            $this->terminal('info', "{$no} | --- {$label} ---");
+        foreach (['conditions' => 'Condition', 'observations' => 'Observation', 'procedures' => 'Procedure',
+            'clinical' => 'ClinicalImpression', 'medicationRequests' => 'MedicationRequest',
+            'medicationDispenses' => 'MedicationDispense', 'medicationStatements' => 'MedicationStatement',
+            'carePlans' => 'CarePlan'] as $stage => $label) {
             try {
                 $this->$stage($row, $context, $practitioner);
             } catch (Throwable $e) {
@@ -129,7 +133,6 @@ class SatuSehatService
                 $this->log('warning', 'failed', $no, "{$label}: belum dapat diproses; periksa data dan tabel pendukung.");
             }
         }
-        $this->terminal('info', "========== SELESAI {$no} ==========");
     }
 
     private function identity(string $type, string $nik): string
@@ -423,7 +426,7 @@ class SatuSehatService
         $existing = (clone $journal)->where('resource_key', $key)->first();
         if ($existing?->status === 'success') {
             $this->mirror($legacy, $existing->resource_id);
-            $this->terminal('success', "{$no} | {$label} | SUDAH TERKIRIM | ID: {$existing->resource_id}");
+            $this->terminal('success', "{$label} | SUDAH TERKIRIM | ID: {$existing->resource_id}");
 
             return $existing->resource_id;
         }
@@ -436,18 +439,18 @@ class SatuSehatService
                     throw new RuntimeException('Pasien encounter lama tidak cocok dengan hasil MPI.');
                 }
                 $this->record($key, $no, $type, 'success', $old->$idColumn);
-                $this->terminal('success', "{$no} | {$label} | SUDAH TERKIRIM (data lama) | ID: {$old->$idColumn}");
+                $this->terminal('success', "{$label} | SUDAH TERKIRIM (data lama) | ID: {$old->$idColumn}");
 
                 return $old->$idColumn;
             }
         }
         if ($existing && in_array($existing->status, ['pending', 'uncertain'], true)) {
-            $this->terminal('warning', "{$no} | {$label} | MENUNGGU REKONSILIASI ({$existing->status})");
+            $this->terminal('warning', "{$label} | MENUNGGU REKONSILIASI ({$existing->status})");
 
             return null;
         }
         if ($existing && $existing->last_attempt_at && CarbonImmutable::parse($existing->last_attempt_at, 'Asia/Jakarta')->addMinutes(5)->isFuture()) {
-            $this->terminal('warning', "{$no} | {$label} | MENUNGGU JEDA COBA ULANG");
+            $this->terminal('warning', "{$label} | MENUNGGU JEDA COBA ULANG");
 
             return null;
         }
@@ -461,7 +464,7 @@ class SatuSehatService
                 }
                 $this->record($key, $no, $type, 'success', $remote['id']);
                 $this->mirror($legacy, $remote['id']);
-                $this->terminal('success', "{$no} | {$label} | SUDAH TERKIRIM (ditemukan di server) | ID: {$remote['id']}");
+                $this->terminal('success', "{$label} | SUDAH TERKIRIM (ditemukan di server) | ID: {$remote['id']}");
 
                 return $remote['id'];
             }
@@ -479,7 +482,7 @@ class SatuSehatService
             return null;
         }
         try {
-            $this->terminal('info', "{$no} | {$label} | MENGIRIM");
+            $this->terminal('info', "{$label} | MENGIRIM");
             $response = $this->client->create($type, $payload);
         } catch (Throwable $e) {
             $this->record($key, $no, $type, 'uncertain');
@@ -513,7 +516,7 @@ class SatuSehatService
                 }
                 $value ??= data_get($payload, 'valueCodeableConcept.text');
                 if ($value !== null) {
-                    $this->terminal('info', "{$no} | {$label} | DATA TERKIRIM: {$value} {$unit}");
+                    $this->terminal('info', "{$label} | DATA TERKIRIM: {$value} {$unit}");
                 }
             }
             $this->mirror($legacy, $id);
@@ -622,6 +625,6 @@ class SatuSehatService
         ServiceLog::create([ 'service_run_id' => $this->run->id,
             'service_name' => 'satu_sehat', 'level' => $level, 'status' => $status, 'reference' => $no,
             'message' => $message, 'response_code' => $code]);
-        ($this->output)($level, $no.' | '.$message);
+        $this->terminal($level, $message);
     }
 }

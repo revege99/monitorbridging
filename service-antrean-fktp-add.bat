@@ -35,7 +35,7 @@ if defined PHP_BIN goto :php_found
 call :try_php "C:\xampp\php\php.exe"
 if defined PHP_BIN goto :php_found
 
-echo [ERROR] PHP dengan driver pdo_mysql tidak ditemukan.
+echo [ERROR] PHP 8.3 atau lebih baru dengan driver pdo_mysql tidak ditemukan.
 echo Aktifkan extension pdo_mysql pada php.ini atau set PHP_BIN
 echo ke lokasi php.exe yang memiliki driver MySQL.
 goto :finish
@@ -87,6 +87,6 @@ exit /b
 :try_php
 if defined PHP_BIN exit /b
 if not exist "%~1" exit /b
-"%~1" -r "exit(in_array('mysql', PDO::getAvailableDrivers(), true) ? 0 : 1);" >nul 2>&1
+"%~1" -r "exit(PHP_VERSION_ID >= 80300 && in_array('mysql', PDO::getAvailableDrivers(), true) ? 0 : 1);" >nul 2>&1
 if not errorlevel 1 set "PHP_BIN=%~1"
 exit /b

@@ -307,6 +307,10 @@ class SatuSehatServiceTest extends TestCase
         $this->service->scan($this->installation, $this->run, '2026-11-11', '2026-11-11', $output);
         $text = implode("\n", $messages);
         $this->assertStringContainsString('Observation Tinggi Badan | BERHASIL TERKIRIM', $text);
+        $this->assertStringContainsString('Nama     : Test Patient', $text);
+        $this->assertSame(1, substr_count($text, self::NO));
+        $this->assertStringNotContainsString('03 Observation', $text);
+        $this->assertStringContainsString(str_repeat('-', 72), $text);
         $this->assertStringContainsString('Observation Suhu | DATA TERKIRIM: 36.5 Cel', $text);
         $ranks = ['Encounter' => 1, 'Condition' => 2, 'Observation' => 3, 'Procedure' => 4,
             'ClinicalImpression' => 5, 'MedicationRequest' => 6, 'MedicationDispense' => 7, 'MedicationStatement' => 8, 'CarePlan' => 9];

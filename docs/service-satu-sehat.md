@@ -140,7 +140,10 @@ WHERE status IN ('pending', 'uncertain', 'failed')
 ORDER BY updated_at DESC;
 ```
 
-Log tidak mencetak NIK, nama pasien, token, secret, payload atau respons klinis.
+Log database tidak menyimpan NIK, nama pasien, token, secret, payload atau respons klinis.
+Terminal menampilkan nama dan nomor rawat sekali pada header tiap pasien, dengan
+garis pemisah dan baris kosong antar pasien. Detail tidak mengulang nomor rawat
+dan tidak menampilkan judul kelompok/nomor tahap seperti `03 Observation`.
 Respons penolakan hanya dicatat HTTP dan kode OperationOutcome, bukan diagnostics.
 Counter `processed` menghitung kunjungan per scan, `succeeded` resource baru sukses,
 dan `failed` resource/tahap yang gagal. Run completed berarti scan selesai,
@@ -157,8 +160,8 @@ Status MENGIRIM, BERHASIL TERKIRIM beserta ID, SUDAH TERKIRIM, jeda retry, dan
 rekonsiliasi ditampilkan sesuai keadaan. Nilai Observation hanya ditampilkan
 sebagai DATA TERKIRIM setelah POST baru berhasil; nilai sumber terkini tidak
 diklaim sebagai isi resource lama. Scan ulang sukses hanya mencetak status ke
-terminal tanpa menambah log database. Judul tahap tetap muncul jika belum ada
-data untuk tahap tersebut.
+terminal tanpa menambah log database. Tahap yang belum memiliki data tidak
+menampilkan judul kosong.
 
 ```shell
 php artisan test --filter=SatuSehatServiceTest

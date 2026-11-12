@@ -67,6 +67,10 @@ class SatuSehatCommand extends Command
                 $this->line("Scan {$from} sampai {$to} (WIB)");
                 try {
                     $service->scan($installation, $run, $from, $to, function ($level, $message) {
+                        if ($level === 'heading') {
+                            $this->line($message);
+                            return;
+                        }
                         $this->line('['.now('Asia/Jakarta')->format('H:i:s').'] '.strtoupper($level).' '.$message);
                     });
                 } catch (Throwable $e) {
