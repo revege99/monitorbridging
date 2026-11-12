@@ -3,9 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\BpjsConfiguration;
-use App\Models\Clinic;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class BpjsConfigurationController extends Controller
 {
@@ -40,7 +39,9 @@ class BpjsConfigurationController extends Controller
         $this->authorizeSuperadmin($request);
         $data = $this->validated($request, $bpjsConfiguration);
         foreach (self::SECRET_FIELDS as $field) {
-            if (blank($data[$field] ?? null)) unset($data[$field]);
+            if (blank($data[$field] ?? null)) {
+                unset($data[$field]);
+            }
         }
         $bpjsConfiguration->update($data);
 
@@ -57,16 +58,21 @@ class BpjsConfigurationController extends Controller
 
     private function validated(Request $request, ?BpjsConfiguration $configuration = null): array
     {
-        $secretRule = $configuration ? ['nullable', 'string'] : ['required', 'string'];
-
-        return $request->validate([
+        $invalid = $configuration ? $configuration->formCredentials()['invalid'] : self::SECRET_FIELDS;
+        $rules = [
             'cons_id' => ['required', 'string', 'max:255'],
-            'secret_key' => $secretRule,
-            'user_key_antrol' => $secretRule,
-            'user_key_pcare' => $secretRule,
             'kode_aplikasi' => ['required', 'string', 'max:10'],
             'username' => ['required', 'string', 'max:255'],
-            'password' => $secretRule,
-        ]);
+        ];
+        foreach (self::SECRET_FIELDS as $field) {
+            $rules[$field] = [in_array($field, $invalid, true) ? 'required' : 'nullable', 'string'];
+        }
+        $validator = validator($request->all(), $rules);
+        if ($validator->fails()) {
+            throw new ValidationException($validator, redirect()->back()
+                ->withErrors($validator)->withInput($request->only(['cons_id', 'kode_aplikasi', 'username'])));
+        }
+
+        return $validator->validated();
     }
 }

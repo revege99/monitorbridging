@@ -12,6 +12,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\TestCase;
 
@@ -121,5 +122,33 @@ class SingleClinicConfigurationTest extends TestCase
         $this->assertNotEmpty($tokens->item(0)->getAttribute('value'));
         $this->assertSame(csrf_token(), $tokens->item(0)->getAttribute('value'));
         $this->assertStringNotContainsString('@csrfid', $html);
+    }
+
+    public function test_unreadable_bpjs_credentials_can_be_reentered_without_hiding_the_failure(): void
+    {
+        $controller = new BpjsConfigurationController;
+        $data = ['cons_id' => 'consumer', 'secret_key' => 'healthy-secret', 'user_key_antrol' => 'antrol',
+            'user_key_pcare' => 'pcare', 'kode_aplikasi' => '095', 'username' => 'user', 'password' => 'password'];
+        $controller->store($this->request($data));
+        DB::connection('central')->table('application_bpjs_configurations')->update(['user_key_antrol' => 'invalid-plaintext-or-damaged-payload']);
+        $configuration = BpjsConfiguration::first();
+        $html = view('configurations.bpjs.form', compact('configuration'))->render();
+        $this->assertStringContainsString('tidak dapat didekripsi: user_key_antrol', $html);
+        $this->assertStringContainsString('healthy-secret', $html);
+        $this->assertStringNotContainsString('invalid-plaintext-or-damaged-payload', $html);
+        $this->assertSame('invalid-plaintext-or-damaged-payload', $configuration->getRawOriginal('user_key_antrol'));
+        $data['secret_key'] = '';
+        $data['user_key_antrol'] = '';
+        try {
+            $controller->update($this->request($data), $configuration);
+            $this->fail('Unreadable credential must be replaced before saving.');
+        } catch (ValidationException $exception) {
+            $this->assertArrayHasKey('user_key_antrol', $exception->errors());
+            $this->assertArrayNotHasKey('password', session()->get('_old_input', []));
+        }
+        $data['user_key_antrol'] = 'reentered-antrol';
+        $controller->update($this->request($data), $configuration);
+        $this->assertSame('reentered-antrol', $configuration->fresh()->user_key_antrol);
+        $this->assertSame('healthy-secret', $configuration->fresh()->secret_key);
     }
 }
