@@ -26,6 +26,8 @@ class KioskConfigurationTest extends TestCase
         }
         (require database_path('migrations/2026_11_12_000002_create_kiosk_configurations_table.php'))->up();
         Schema::connection('clinic')->create('pasien', fn (Blueprint $table) => $table->string('no_rkm_medis', 15)->primary());
+        Schema::connection('clinic')->create('set_no_rkm_medis', fn (Blueprint $table) => $table->string('no_rkm_medis', 15));
+        DB::connection('clinic')->table('set_no_rkm_medis')->insert(['no_rkm_medis' => '000000']);
     }
 
     private function request(array $data, bool $admin = true): Request
@@ -57,6 +59,7 @@ class KioskConfigurationTest extends TestCase
             ['no_rkm_medis' => '00.00.14'], ['no_rkm_medis' => '00/00/15'], ['no_rkm_medis' => 'OLD-ABC'],
         ]);
         $controller = new KioskConfigurationController;
+        DB::connection('clinic')->table('set_no_rkm_medis')->update(['no_rkm_medis' => '000015']);
         $controller->update($this->request($this->settings(['rm_use_separator' => 0])));
         $format = new MedicalRecordFormat(KioskConfiguration::current());
         $this->assertSame('000016', $format->next());
@@ -79,22 +82,27 @@ class KioskConfigurationTest extends TestCase
         }
     }
 
-    public function test_eight_digit_sequence_uses_largest_number_without_a_fixed_prefix(): void
+    public function test_eight_digit_sequence_uses_simrs_counter_without_a_fixed_prefix(): void
     {
         (new KioskConfigurationController)->update($this->request($this->settings(['rm_digits' => 8, 'rm_use_separator' => 0])));
         $format = new MedicalRecordFormat(KioskConfiguration::current());
         DB::connection('clinic')->table('pasien')->insert([
             ['no_rkm_medis' => '00025971'], ['no_rkm_medis' => '00025972'], ['no_rkm_medis' => '00025973'],
         ]);
+        DB::connection('clinic')->table('set_no_rkm_medis')->update(['no_rkm_medis' => '00025973']);
         $this->assertSame('00025974', $format->next());
         DB::connection('clinic')->table('pasien')->insert(['no_rkm_medis' => '00099999']);
+        DB::connection('clinic')->table('set_no_rkm_medis')->update(['no_rkm_medis' => '00099999']);
         $this->assertSame('00100000', $format->next());
         DB::connection('clinic')->table('pasien')->insert(['no_rkm_medis' => '01712214']);
+        // Nomor besar dari urutan lain tidak mengalahkan pencatat SIMRS.
+        $this->assertSame('00100000', $format->next());
+        DB::connection('clinic')->table('set_no_rkm_medis')->update(['no_rkm_medis' => '01712214']);
         $this->assertSame('01712215', $format->next());
         // Baris yang dimasukkan belakangan tidak mengalahkan nilai numerik terbesar.
         DB::connection('clinic')->table('pasien')->insert(['no_rkm_medis' => '00025975']);
         $this->assertSame('01712215', $format->next());
-        $this->assertFalse(Schema::connection('clinic')->hasTable('set_no_rkm_medis'));
+        $this->assertSame('01712214', DB::connection('clinic')->table('set_no_rkm_medis')->value('no_rkm_medis'));
     }
 
     public function test_invalid_grouping_or_excessive_length_cannot_be_saved(): void
@@ -111,9 +119,61 @@ class KioskConfigurationTest extends TestCase
         $this->assertDatabaseCount('kiosk_configurations', 0, 'central');
     }
 
+    public function test_stale_counter_skips_used_numbers_without_advancing_until_save(): void
+    {
+        (new KioskConfigurationController)->update($this->request($this->settings(['rm_digits' => 8, 'rm_use_separator' => 0])));
+        DB::connection('clinic')->table('set_no_rkm_medis')->update(['no_rkm_medis' => '00025970']);
+        DB::connection('clinic')->table('pasien')->insert([
+            ['no_rkm_medis' => '00025971'], ['no_rkm_medis' => '00025972'], ['no_rkm_medis' => '00025973'],
+            ['no_rkm_medis' => '01712214'],
+        ]);
+        $format = new MedicalRecordFormat(KioskConfiguration::current());
+        $this->assertSame('00025974', $format->next());
+        $this->assertSame('00025970', DB::connection('clinic')->table('set_no_rkm_medis')->value('no_rkm_medis'));
+        DB::connection('clinic')->transaction(function () use ($format) {
+            $previous = $format->lockCounterForSave('00025974');
+            DB::connection('clinic')->table('pasien')->insert(['no_rkm_medis' => '00025974']);
+            $format->advanceAfterSave('00025974', $previous);
+        });
+        $this->assertSame('00025974', DB::connection('clinic')->table('set_no_rkm_medis')->value('no_rkm_medis'));
+        $this->assertSame('00025975', $format->next());
+    }
+
+    public function test_counter_and_patient_both_roll_back_when_saving_fails(): void
+    {
+        $format = new MedicalRecordFormat(KioskConfiguration::current());
+        try {
+            DB::connection('clinic')->transaction(function () use ($format) {
+                $previous = $format->lockCounterForSave('00-00-01');
+                DB::connection('clinic')->table('pasien')->insert(['no_rkm_medis' => '00-00-01']);
+                $format->advanceAfterSave('00-00-01', $previous);
+                throw new \RuntimeException('Simulated failure after insert.');
+            });
+        } catch (\RuntimeException $exception) {
+            $this->assertSame('Simulated failure after insert.', $exception->getMessage());
+        }
+        $this->assertDatabaseCount('pasien', 0, 'clinic');
+        $this->assertSame('000000', DB::connection('clinic')->table('set_no_rkm_medis')->value('no_rkm_medis'));
+    }
+
+    public function test_saved_counter_has_no_separator_and_stale_suggestion_is_rejected(): void
+    {
+        $format = new MedicalRecordFormat(KioskConfiguration::current());
+        DB::connection('clinic')->transaction(function () use ($format) {
+            $previous = $format->lockCounterForSave('00-00-01');
+            DB::connection('clinic')->table('pasien')->insert(['no_rkm_medis' => '00-00-01']);
+            $format->advanceAfterSave('00-00-01', $previous);
+        });
+        $this->assertSame('000001', DB::connection('clinic')->table('set_no_rkm_medis')->value('no_rkm_medis'));
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('terakhir sudah berubah');
+        DB::connection('clinic')->transaction(fn () => $format->lockCounterForSave('00-00-01'));
+    }
+
     public function test_sequence_overflow_is_rejected_instead_of_truncating_digits(): void
     {
         DB::connection('clinic')->table('pasien')->insert(['no_rkm_medis' => '99-99-99']);
+        DB::connection('clinic')->table('set_no_rkm_medis')->update(['no_rkm_medis' => '999999']);
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('melebihi kapasitas');
         (new MedicalRecordFormat(KioskConfiguration::current()))->next();

@@ -70,11 +70,82 @@ class MedicalRecordFormat
 
     public function next(): string
     {
-        // Angka terbesar + 1 dari pasien, tanpa prefix tetap atau acuan set_no_rkm_medis.
-        // Pemisah dan nol di depan hanya format tampilan, bukan pembatas urutan.
-        $last = $this->numericPatients()->selectRaw('MAX('.$this->numericSql().') AS last_number')->value('last_number');
+        $next = $this->counterNumber($this->counter()) + 1;
+        // Counter lama dapat tertinggal; lewati nomor terpakai tanpa mengambil MAX seluruh pasien.
+        do {
+            $this->format($next);
+            $rows = $this->numericPatients()->whereRaw($this->numericSql().' >= ?', [$next])
+                ->selectRaw($this->numericSql().' AS number')->orderByRaw($this->numericSql().' ASC')->limit(500)->get();
+            foreach ($rows as $row) {
+                $used = (int) $row->number;
+                if ($used > $next) {
+                    return $this->format($next);
+                }
+                if ($used === $next) {
+                    $next++;
+                }
+            }
+        } while ($rows->count() === 500);
 
-        return $this->format(((int) $last) + 1);
+        return $this->format($next);
+    }
+
+    private function counter(bool $lock = false): string
+    {
+        $query = DB::connection('clinic')->table('set_no_rkm_medis');
+        if ($lock) {
+            $query->lockForUpdate();
+        }
+        $rows = $query->get(['no_rkm_medis']);
+        if ($rows->count() !== 1) {
+            throw new RuntimeException('Tabel set_no_rkm_medis harus memiliki tepat satu baris nomor RM terakhir.');
+        }
+        $value = (string) $rows->first()->no_rkm_medis;
+        $this->counterNumber($value);
+
+        return $value;
+    }
+
+    private function counterNumber(string $value): int
+    {
+        $value = str_replace(['-', '.', '/'], '', $value);
+        if (! preg_match('/^[0-9]{1,15}$/D', $value)) {
+            throw new RuntimeException('Nomor terakhir pada set_no_rkm_medis tidak valid.');
+        }
+
+        return (int) $value;
+    }
+
+    public function lockCounterForSave(string $medicalRecord): string
+    {
+        if (DB::connection('clinic')->transactionLevel() < 1) {
+            throw new \LogicException('Pencatat RM harus dikunci di dalam transaksi pasien.');
+        }
+        $previous = $this->counter(true);
+        $this->format($this->counterNumber($medicalRecord));
+        if ($this->counterNumber($medicalRecord) <= $this->counterNumber($previous)) {
+            throw new RuntimeException('Nomor RM terakhir sudah berubah. Periksa ulang peserta untuk memperoleh nomor terbaru.');
+        }
+
+        return $previous;
+    }
+
+    public function advanceAfterSave(string $medicalRecord, string $previous): void
+    {
+        $db = DB::connection('clinic');
+        if ($db->transactionLevel() < 1 || ! $db->table('pasien')->where('no_rkm_medis', $medicalRecord)->exists()) {
+            throw new \LogicException('Pencatat RM hanya diperbarui sesudah pasien disimpan dalam transaksi yang sama.');
+        }
+        $number = $this->counterNumber($medicalRecord);
+        if ($number <= $this->counterNumber($previous)) {
+            throw new RuntimeException('Nomor pencatat RM tidak boleh mundur.');
+        }
+        // Counter tetap numerik tanpa pemisah, sesuai pencatat urutan SIMRS.
+        $counter = str_pad((string) $number, $this->configuration->rm_digits, '0', STR_PAD_LEFT);
+        $updated = $db->table('set_no_rkm_medis')->where('no_rkm_medis', $previous)->update(['no_rkm_medis' => $counter]);
+        if ($updated !== 1) {
+            throw new RuntimeException('Pencatat RM berubah saat penyimpanan. Silakan ulangi pendaftaran.');
+        }
     }
 
     public function existsEquivalent(string $medicalRecord): bool

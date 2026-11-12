@@ -15,25 +15,30 @@ bukan hasil alokasi nomor berikutnya. Format UI Anjungan (pattern, panjang,
 placeholder) dan validasi server mengikuti pengaturan yang sama. Setelah
 mengubah pengaturan, muat ulang Anjungan atau verifikasi ulang peserta.
 
-Generator mencari angka terbesar di seluruh nomor RM numerik SIMRS, termasuk
-format lama dengan tanda strip, titik atau garis miring. Contoh: nomor terakhir
-`00-00-99` menghasilkan `000100` saat pemisah dimatikan, bukan memulai dari 1.
-Nomor dengan prefix huruf tidak digunakan sebagai dasar urutan numerik.
-Nol di depan bukan prefix tetap. Untuk 8 digit: `00025973` dilanjutkan ke
-`00025974`, `00099999` ke `00100000`, dan `01712214` ke `01712215`.
-Jika `01712214` ada, nomor itu menjadi acuan meskipun ada pasien dengan nomor
-`00025973` yang dimasukkan lebih baru. Generator tidak membaca maupun mengubah
-`set_no_rkm_medis`.
-Jika angka berikutnya melampaui kapasitas digit, aplikasi menolak pembuatan dan
-meminta penambahan digit; tidak memotong angka atau memulai ulang dari nol.
+Generator memakai `set_no_rkm_medis.no_rkm_medis` pada database SIMRS sebagai
+pencatat nomor terakhir, lalu mengusulkan nilai + 1 sesuai format pengaturan.
+Tabel harus sudah ada dan berisi tepat satu baris nomor numerik yang valid.
+Aplikasi tidak membuat/reset tabel pencatat dan tidak memakai MAX seluruh pasien.
 
-Nomor yang sudah dimiliki pasien tidak diubah. Pemeriksaan bentrok memakai nilai
-numerik yang dinormalisasi, sehingga `00-00-01` dan `000001` dianggap nomor yang
-sama untuk pembuatan pasien baru. Nomor usulan tetap dapat diedit sebelum Simpan
-dan bukan reservasi. Pemeriksaan akhir diulang saat penyimpanan. Pendaftaran
-pasien baru dari aplikasi ini memakai cache lock per koneksi SIMRS, lalu transaksi
-database. Penulisan langsung dari aplikasi SIMRS lain tetap harus mengikuti
-aturan nomor/keunikan yang disepakati bersama.
+Contoh pencatat `00025973` menghasilkan usulan `00025974`. Bila pencatat masih
+`00025970` tetapi nomor 71 sampai 73 sudah digunakan, generator melewatinya
+sehingga usulan menjadi `00025974`. Nomor besar dari urutan lama seperti
+`01712214` tidak membuat loncatan selama bukan nomor pada pencatat. Pemeriksaan
+nomor terpakai dinormalisasi tanpa pemisah untuk menghindari bentrok lintas format.
+
+Menampilkan usulan tidak mengubah pencatat. Saat pasien baru disimpan, baris
+pencatat dikunci dalam transaksi database SIMRS, nomor dicek lagi, pasien diinsert,
+lalu pencatat diset ke nomor pasien yang berhasil disimpan. Nilai pencatat disimpan
+numerik tanpa pemisah; misalnya pasien `00-00-01` menghasilkan pencatat `000001`.
+Pencatat tidak ditambah dua kali. Jika transaksi gagal, keduanya di-rollback.
+Jika peserta ternyata sudah memiliki pasien, pencatat tidak dinaikkan.
+
+Nol di depan bukan prefix tetap: `00099999` berlanjut ke `00100000` untuk format
+8 digit. Jika kapasitas digit habis, generator menolak tanpa memotong angka.
+Nomor pasien lama tidak diubah. Usulan bukan reservasi; jika nomor terakhir sudah
+berubah oleh pendaftaran lain sebelum Simpan, pengguna diminta verifikasi ulang.
+Anjungan juga memakai cache lock per koneksi SIMRS. Khanza/aplikasi lain harus
+memakai pencatat dan aturan keunikan yang konsisten agar urutan tetap selaras.
 
 ## Deployment
 

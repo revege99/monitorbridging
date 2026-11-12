@@ -98,6 +98,7 @@ class KioskController extends Controller
                 if ($existing) return $this->fillMissingParticipantIdentifiers($existing, $participant);
 
                 $rm = $data['no_rkm_medis'];
+                $previousCounter = $format->lockCounterForSave($rm);
                 $rmExists = $format->existsEquivalent($rm);
                 if ($rmExists) throw new RuntimeException("Nomor rekam medis {$rm} sudah digunakan. Silakan gunakan nomor lain.");
 
@@ -122,6 +123,7 @@ class KioskController extends Controller
                     'suku_bangsa' => 1, 'bahasa_pasien' => 1, 'cacat_fisik' => 1, 'email' => '-', 'nip' => '-',
                     'propinsipj' => $data['province_name'],
                 ]);
+                $format->advanceAfterSave($rm, $previousCounter);
                 return DB::connection('clinic')->table('pasien')->where('no_rkm_medis', $rm)->first();
                 });
             });
