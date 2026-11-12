@@ -99,4 +99,27 @@ class SingleClinicConfigurationTest extends TestCase
         }
         $this->assertDatabaseCount('application_profiles', 1, 'central');
     }
+
+    public function test_database_test_form_renders_a_valid_csrf_token(): void
+    {
+        $controller = new SetupClinicController;
+        $controller->storeClinic($this->request(['name' => 'Klinik Lokal', 'is_active' => true]));
+        $controller->saveDatabase($this->request(['connection_name' => 'SIMRS', 'host' => '127.0.0.1',
+            'port' => 3306, 'database_name' => 'sik', 'username' => 'test', 'password' => '',
+            'collation' => 'utf8mb4_unicode_ci']));
+        $this->actingAs(new User(['name' => 'Admin', 'email' => 'admin@example.test', 'role' => 'superadmin', 'is_active' => true]));
+        view()->share('activeClinic', Clinic::first());
+        session()->regenerateToken();
+        $request = $this->request([]);
+        $request->query->set('tab', 'database');
+        $html = $controller->index($request)->render();
+        $document = new \DOMDocument;
+        $document->loadHTML($html, LIBXML_NOERROR | LIBXML_NOWARNING);
+        $xpath = new \DOMXPath($document);
+        $tokens = $xpath->query('//form[@action="'.route('setup.database.test').'"]//input[@name="_token"]');
+        $this->assertSame(1, $tokens->length);
+        $this->assertNotEmpty($tokens->item(0)->getAttribute('value'));
+        $this->assertSame(csrf_token(), $tokens->item(0)->getAttribute('value'));
+        $this->assertStringNotContainsString('@csrfid', $html);
+    }
 }
