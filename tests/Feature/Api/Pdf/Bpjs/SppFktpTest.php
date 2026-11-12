@@ -2,8 +2,8 @@
 
 namespace Tests\Feature\Api\Pdf\Bpjs;
 
-use App\Models\InstallationSetting;
-use App\Services\ActiveInstallation;
+use App\Services\ClinicContext;
+use App\Services\LocalClinic;
 use App\Services\Pdf\Bpjs\SppFktpService;
 use Illuminate\Support\Facades\DB;
 use Mockery\MockInterface;
@@ -19,8 +19,8 @@ class SppFktpTest extends TestCase
         parent::setUp();
         Fixture::seed();
         config(['services.khanza.integration_token' => 'pdf-test-token', 'app.debug' => false]);
-        $this->mock(ActiveInstallation::class, function (MockInterface $mock) {
-            $installation = new InstallationSetting;
+        $this->mock(LocalClinic::class, function (MockInterface $mock) {
+            $installation = new ClinicContext;
             $mock->shouldReceive('resolveForPdf')->andReturn($installation);
             $mock->shouldReceive('configureClinicDatabase')->with($installation)->andReturnNull();
         });

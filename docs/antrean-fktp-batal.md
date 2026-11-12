@@ -27,7 +27,7 @@ address bar browser: pembatalan adalah POST yang memerlukan token integrasi.
 
 ## Alur dan sumber data
 
-Mengikuti panggil antrean: pilih instalasi aktif, siapkan koneksi klinik, ambil
+Mengikuti panggil antrean: baca konfigurasi tunggal aplikasi, siapkan koneksi SIMRS, ambil
 data berdasarkan no_rawat, kirim POST JSON ke BPJS, lalu simpan log hasilnya.
 
 | Field BPJS | Sumber |

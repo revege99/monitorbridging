@@ -1,15 +1,8 @@
 @php($editing = isset($configuration) && $configuration)
 <div class="pcare-form">
-    <div class="pcare-form-intro"><h4>Detail konfigurasi BPJS</h4><p>Pilih klinik dan lengkapi kredensial untuk layanan BPJS.</p></div>
+    <div class="pcare-form-intro"><h4>Detail konfigurasi BPJS</h4><p>Lengkapi kredensial BPJS untuk aplikasi ini.</p></div>
     <div class="pcare-form-grid">
-    <label class="text-xs font-medium text-slate-600 sm:col-span-2">Klinik
-        <select name="clinic_id" required class="mt-1.5 w-full rounded-xl border border-slate-200 p-2.5 text-sm">
-            @foreach($clinics as $clinic)
-                <option value="{{ $clinic->id }}" @selected(old('clinic_id', $configuration?->clinic_id) == $clinic->id)>{{ $clinic->name }}</option>
-            @endforeach
-        </select>
-    </label>
-    <label class="text-xs font-medium text-slate-600">Consumer ID
+<label class="text-xs font-medium text-slate-600">Consumer ID
         <input name="cons_id" required value="{{ old('cons_id', $configuration?->cons_id) }}" class="mt-1.5 w-full rounded-xl border border-slate-200 p-2.5 text-sm">
     </label>
     <label class="text-xs font-medium text-slate-600">Kode Aplikasi

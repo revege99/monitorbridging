@@ -3,7 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\ServiceRun;
-use App\Services\ActiveInstallation;
+use App\Services\LocalClinic;
 use App\Services\RegistrasiProlanisSyncService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
@@ -14,7 +14,7 @@ class RegistrasiProlanisSyncCommand extends Command
     protected $signature = 'service:registrasi-prolanis-sync {--once : Jalankan satu kali scan} {--interval=5 : Jeda scan dalam detik}';
     protected $description = 'Sinkronkan data Prolanis dan PRB untuk registrasi BPJS hari ini';
 
-    public function handle(ActiveInstallation $active, RegistrasiProlanisSyncService $service): int
+    public function handle(LocalClinic $active, RegistrasiProlanisSyncService $service): int
     {
         $lock = Cache::lock('service:registrasi-prolanis-sync', 86400);
         if (!$lock->get()) {
@@ -28,7 +28,7 @@ class RegistrasiProlanisSyncCommand extends Command
             $installation = $active->resolve();
             $active->configureClinicDatabase($installation);
             $run = ServiceRun::create([
-                'clinic_id' => $installation->clinic_id,
+                
                 'service_name' => 'registrasi_prolanis_sync',
                 'status' => 'running',
                 'started_at' => now(),

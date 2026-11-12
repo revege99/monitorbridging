@@ -2,7 +2,7 @@
 // service add antrean fktp ke bpjs
 namespace App\Services;
 use App\Models\BaseUrlConfiguration;
-use App\Models\InstallationSetting;
+use App\Services\ClinicContext;
 use App\Models\ServiceLog;
 use App\Models\ServiceRun;
 use Illuminate\Support\Facades\DB;
@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Http;
 use Throwable;
 class AntreanFktpAddService
 {
-    public function scan(InstallationSetting $installation, ServiceRun $run, callable $output): void
+    public function scan(ClinicContext $installation, ServiceRun $run, callable $output): void
     {
         $now = now('Asia/Jakarta'); $tanggal=$now->toDateString(); $hari=['Monday'=>'SENIN','Tuesday'=>'SELASA','Wednesday'=>'RABU','Thursday'=>'KAMIS','Friday'=>'JUMAT','Saturday'=>'SABTU','Sunday'=>'MINGGU'][$now->englishDayOfWeek];
         $this->log($installation,$run,$output,'info','scan',"Cek pasien BPJS tanggal {$tanggal} ({$hari}) ...");
@@ -23,7 +23,7 @@ class AntreanFktpAddService
             sleep(1);
         }
     }
-    private function send(InstallationSetting $installation, ServiceRun $run, array $data, string $tanggal, callable $output): void
+    private function send(ClinicContext $installation, ServiceRun $run, array $data, string $tanggal, callable $output): void
     {
         [$mulai,$selesai]=array_pad(explode('-',$data['jam_praktek'] ?? ''),2,'');
         $payload=['nomorkartu'=>$data['no_peserta'],'nik'=>$data['no_ktp'],'nohp'=>$data['nohp'],'kodepoli'=>$data['kd_poli'],'namapoli'=>$data['nm_poli'],'norm'=>$data['no_rkm_medis'],'tanggalperiksa'=>$tanggal,'kodedokter'=>$data['kd_dokter_pcare'],'namadokter'=>$data['nm_dokter'],'jampraktek'=>date('H:i',strtotime($mulai)).'-'.date('H:i',strtotime($selesai)),'nomorantrean'=>$data['nomor'],'angkaantrean'=>(int)$data['angka'],'keterangan'=>''];
@@ -53,9 +53,9 @@ class AntreanFktpAddService
         if (!empty($data['antrean_bpjs_id'])) DB::connection('clinic')->table('antrean_terkirim_bpjs')->where('id',$data['antrean_bpjs_id'])->update($values);
         else DB::connection('clinic')->table('antrean_terkirim_bpjs')->insert($values+['no_rawat'=>$data['no_rawat']]);
     }
-    private function log(InstallationSetting $i,ServiceRun $r,callable $out,string $level,string $status,string $message,?string $reference=null,?int $code=null,?int $duration=null,array $context=[]): void
+    private function log(ClinicContext $i,ServiceRun $r,callable $out,string $level,string $status,string $message,?string $reference=null,?int $code=null,?int $duration=null,array $context=[]): void
     {
-        ServiceLog::create(['service_run_id'=>$r->id,'clinic_id'=>$i->clinic_id,'service_name'=>'antrean_fktp_add','level'=>$level,'status'=>$status,'reference'=>$reference,'message'=>$message,'response_code'=>$code,'duration_ms'=>$duration,'context'=>$context?:null]); $out($level,$message);
+        ServiceLog::create(['service_run_id'=>$r->id,'service_name'=>'antrean_fktp_add','level'=>$level,'status'=>$status,'reference'=>$reference,'message'=>$message,'response_code'=>$code,'duration_ms'=>$duration,'context'=>$context?:null]); $out($level,$message);
     }
     private function query(): string
     {

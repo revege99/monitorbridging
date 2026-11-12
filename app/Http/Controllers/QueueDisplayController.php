@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\InstallationSetting;
+use App\Services\ClinicContext;
 use App\Models\QueueCallHistory;
-use App\Services\ActiveInstallation;
+use App\Services\LocalClinic;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -12,7 +12,7 @@ use Illuminate\View\View;
 
 class QueueDisplayController extends Controller
 {
-    public function __construct(private readonly ActiveInstallation $activeInstallation)
+    public function __construct(private readonly LocalClinic $activeInstallation)
     {
     }
 
@@ -22,7 +22,7 @@ class QueueDisplayController extends Controller
 
         return view('display.queue', [
             'clinic' => $installation?->clinic,
-            'initialState' => $this->statePayload($installation?->clinic_id),
+            'initialState' => $this->statePayload($installation),
         ]);
     }
 
@@ -30,7 +30,7 @@ class QueueDisplayController extends Controller
     {
         $installation = $this->installation();
 
-        return response()->json($this->statePayload($installation?->clinic_id));
+        return response()->json($this->statePayload($installation));
     }
 
     public function store(Request $request): JsonResponse
@@ -43,8 +43,8 @@ class QueueDisplayController extends Controller
         }
 
         $installation = $this->installation();
-        if (!$installation?->clinic_id) {
-            return response()->json(['message' => 'Instalasi klinik belum diaktifkan'], 422);
+        if (!$installation) {
+            return response()->json(['message' => 'Profil atau koneksi SIMRS aplikasi belum dikonfigurasi'], 422);
         }
 
         $data = $request->validate([
@@ -75,18 +75,17 @@ class QueueDisplayController extends Controller
         ]);
     }
 
-    private function installation(): ?InstallationSetting
+    private function installation(): ?ClinicContext
     {
-        return InstallationSetting::with(['clinic', 'clinic.database'])->where('is_activated', true)->first();
+        try {
+            return $this->activeInstallation->resolveForPdf();
+        } catch (\RuntimeException $exception) {
+            return null;
+        }
     }
 
-    private function statePayload(?int $clinicId): array
+    private function statePayload(?ClinicContext $installation): array
     {
-        if (!$clinicId) {
-            return ['latest' => null, 'recent' => [], 'calls' => [], 'polis' => [], 'server_time' => now('Asia/Jakarta')->toIso8601String()];
-        }
-
-        $installation = $this->installation();
         if (!$installation?->clinic?->database) {
             return ['latest' => null, 'recent' => [], 'calls' => [], 'polis' => [], 'server_time' => now('Asia/Jakarta')->toIso8601String()];
         }

@@ -3,14 +3,14 @@
 namespace App\Services;
 
 use App\Models\BaseUrlConfiguration;
-use App\Models\InstallationSetting;
+use App\Services\ClinicContext;
 use Illuminate\Support\Facades\Http;
 use LZCompressor\LZString;
 use RuntimeException;
 
 class BpjsParticipantService
 {
-    public function lookup(InstallationSetting $installation, string $type, string $number): array
+    public function lookup(ClinicContext $installation, string $type, string $number): array
     {
         if (!in_array($type, ['nik', 'noka'], true)) throw new RuntimeException('Jenis pencarian tidak valid.');
 

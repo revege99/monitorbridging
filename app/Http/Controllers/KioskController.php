@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\ActiveInstallation;
+use App\Services\LocalClinic;
 use App\Services\BpjsParticipantService;
 use App\Services\PcareOnlineRegistrationService;
 use Carbon\CarbonImmutable;
@@ -16,7 +16,7 @@ use RuntimeException;
 
 class KioskController extends Controller
 {
-    public function __construct(private readonly ActiveInstallation $active, private readonly BpjsParticipantService $participants)
+    public function __construct(private readonly LocalClinic $active, private readonly BpjsParticipantService $participants)
     {
     }
 
@@ -51,7 +51,7 @@ class KioskController extends Controller
             return response()->json([
                 'status' => true,
                 'participant' => $participant,
-                'participant_token' => Crypt::encryptString(json_encode(['participant' => $participant, 'issued_at' => now()->timestamp, 'clinic_id' => $installation->clinic_id], JSON_UNESCAPED_UNICODE)),
+                'participant_token' => Crypt::encryptString(json_encode(['participant' => $participant, 'issued_at' => now()->timestamp, 'database_fingerprint' => $installation->fingerprint()], JSON_UNESCAPED_UNICODE)),
                 'patient' => $patient ? $this->patient($patient) : null,
                 'suggested_rm' => !$patient ? $this->nextMedicalRecord() : null,
                 'selection' => $this->selectionOptions($data['mode']),
@@ -84,7 +84,7 @@ class KioskController extends Controller
             foreach (['nik', 'noka', 'nama', 'tanggal_lahir'] as $field) if (empty($participant[$field])) throw new RuntimeException("Data {$field} dari BPJS belum lengkap.");
 
             $installation = $this->active->resolve();
-            if ((int) ($tokenData['clinic_id'] ?? 0) !== (int) $installation->clinic_id) throw new RuntimeException('Klinik pada sesi verifikasi tidak sesuai.');
+            if (!hash_equals($installation->fingerprint(), (string) ($tokenData['database_fingerprint'] ?? ''))) throw new RuntimeException('Koneksi SIMRS pada sesi verifikasi telah berubah. Silakan verifikasi ulang.');
             $this->active->configureClinicDatabase($installation);
             $patient = DB::connection('clinic')->transaction(function () use ($participant, $data) {
                 $existing = $this->findPatientByParticipant($participant, true);

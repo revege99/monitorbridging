@@ -12,9 +12,6 @@ class DashboardController extends Controller
     public function index(Request $request)
     {
         $today = now('Asia/Jakarta')->toDateString();
-        $clinicId = $request->user()->isSuperadmin()
-            ? $request->session()->get('active_clinic_id')
-            : $request->user()->clinic_id;
 
         $metrics = [
             'registrations' => 0,
@@ -65,13 +62,10 @@ class DashboardController extends Controller
             $dbError = 'Data klinik belum dapat dimuat. Periksa kembali koneksi database klinik.';
         }
 
-        $serviceRun = $clinicId
-            ? ServiceRun::query()
-                ->where('clinic_id', $clinicId)
+        $serviceRun = ServiceRun::query()
                 ->where('service_name', 'antrean_fktp_add')
                 ->latest('id')
-                ->first()
-            : null;
+                ->first();
 
         $serviceOnline = $serviceRun?->status === 'running'
             && $serviceRun->last_heartbeat_at?->greaterThan(now()->subSeconds(30));

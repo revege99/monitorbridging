@@ -3,7 +3,7 @@
 namespace App\Services;
 
 use App\Models\BaseUrlConfiguration;
-use App\Models\InstallationSetting;
+use App\Services\ClinicContext;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use LZCompressor\LZString;
@@ -12,7 +12,7 @@ use Throwable;
 
 class PcareDiagnosisService
 {
-    public function syncNonSpecialist(InstallationSetting $installation, string $careNumber): array
+    public function syncNonSpecialist(ClinicContext $installation, string $careNumber): array
     {
         $diagnoses = DB::connection('clinic')->table('diagnosa_pasien')
             ->where('no_rawat', $careNumber)
@@ -52,7 +52,7 @@ class PcareDiagnosisService
         ];
     }
 
-    private function syncDiagnosis(InstallationSetting $installation, object $diagnosis): array
+    private function syncDiagnosis(ClinicContext $installation, object $diagnosis): array
     {
         $code = trim((string) $diagnosis->kd_penyakit);
         if ($code === '') throw new RuntimeException('Kode diagnosa kosong.');
@@ -82,7 +82,7 @@ class PcareDiagnosisService
         ];
     }
 
-    private function lookup(InstallationSetting $installation, string $diagnosisCode): array
+    private function lookup(ClinicContext $installation, string $diagnosisCode): array
     {
         $bpjs = $installation->clinic->bpjsConfiguration;
         if (!$bpjs) throw new RuntimeException('Konfigurasi BPJS klinik belum tersedia.');

@@ -24,13 +24,13 @@
         <div class="flex-1 overflow-auto p-4">
             <section class="pcare-card" aria-labelledby="pcare-heading">
                 <div class="pcare-toolbar">
-                    <div class="pcare-heading"><span class="pcare-emblem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6Z"/><circle cx="13" cy="10" r="2"/><path d="m11.5 11.5-4 4M8 15l1 1"/></svg></span><div><h3 id="pcare-heading">Kredensial BPJS</h3><p>Kelola kredensial integrasi BPJS untuk setiap klinik.</p></div></div>
-                    <div class="pcare-tools"><label class="pcare-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="10" r="7"/><path d="m15 15 5 5"/></svg><input id="pcare-search" type="search" placeholder="Cari konfigurasi..." aria-label="Cari klinik, Cons ID, kode aplikasi, atau username"></label><button data-modal-open="pcare-create" class="pcare-add"><span aria-hidden="true">&#43;</span> Tambah Kredensial</button></div>
+                    <div class="pcare-heading"><span class="pcare-emblem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6Z"/><circle cx="13" cy="10" r="2"/><path d="m11.5 11.5-4 4M8 15l1 1"/></svg></span><div><h3 id="pcare-heading">Kredensial BPJS</h3><p>Kelola kredensial integrasi BPJS untuk aplikasi ini.</p></div></div>
+                    <div class="pcare-tools"><label class="pcare-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="10" r="7"/><path d="m15 15 5 5"/></svg><input id="pcare-search" type="search" placeholder="Cari konfigurasi..." aria-label="Cari klinik, Cons ID, kode aplikasi, atau username"></label>@if($configurations->isEmpty())<button data-modal-open="pcare-create" class="pcare-add"><span aria-hidden="true">&#43;</span> Tambah Kredensial</button>@endif</div>
                 </div>
                 <div class="pcare-table-wrap"><table class="pcare-table"><thead><tr><th>Klinik</th><th>Cons ID</th><th>Username</th><th>Kode Aplikasi</th><th>Aksi</th></tr></thead><tbody>
                 @foreach($configurations as $configuration)
-                    <tr data-pcare-row data-search="{{ mb_strtolower($configuration->clinic->name.' '.$configuration->cons_id.' '.$configuration->username.' '.$configuration->kode_aplikasi) }}">
-                        <td>{{ $configuration->clinic->name }}</td>
+                    <tr data-pcare-row data-search="{{ mb_strtolower(($activeClinic?->name ?? 'Klinik aplikasi').' '.$configuration->cons_id.' '.$configuration->username.' '.$configuration->kode_aplikasi) }}">
+                        <td>{{ ($activeClinic?->name ?? 'Klinik aplikasi') }}</td>
                         @foreach(['cons_id' => 'Cons ID', 'username' => 'Username'] as $field => $label)
                         <td><div class="pcare-credential" data-value="{{ $configuration->{$field} }}"><span>{{ $configuration->{$field} }}</span><button type="button" data-copy aria-label="Salin {{ $label }}" title="Salin {{ $label }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="7" width="11" height="14" rx="2"/><path d="M9 7V3h11v14h-5"/></svg></button></div></td>
                         @endforeach
@@ -42,8 +42,8 @@
                 </tbody></table></div>
                 <div class="pcare-footer"><div><p class="pcare-note"><span aria-hidden="true">&#9432;</span> Kelola dan perbarui kredensial layanan BPJS.</p><p id="pcare-count" aria-live="polite"></p><p id="pcare-feedback" role="status"></p></div><div class="pcare-pagination"><select id="pcare-size" aria-label="Jumlah konfigurasi per halaman"><option value="10">10 / halaman</option><option value="25">25 / halaman</option><option value="50">50 / halaman</option></select><button id="pcare-prev" aria-label="Halaman sebelumnya">&#8249;</button><span id="pcare-page-number">1</span><button id="pcare-next" aria-label="Halaman berikutnya">&#8250;</button></div></div>
             </section>
-            <x-pcare-modal subtitle="Kelola akses integrasi BPJS untuk setiap klinik." id="pcare-create" title="Tambah Konfigurasi BPJS"><form method="POST" action="{{ route('configurations.bpjs.store') }}">@csrf @include('configurations.bpjs.form', ['configuration' => null])</form></x-pcare-modal>
-            @foreach($configurations as $configuration)<x-pcare-modal subtitle="Kelola akses integrasi BPJS untuk setiap klinik." id="pcare-edit-{{ $configuration->id }}" title="Edit Konfigurasi BPJS - {{ $configuration->id }}"><form method="POST" action="{{ route('configurations.bpjs.update', $configuration) }}">@csrf @method('PUT') @include('configurations.bpjs.form')</form></x-pcare-modal>@endforeach
+            @if($configurations->isEmpty())<x-pcare-modal subtitle="Kelola akses integrasi BPJS untuk aplikasi ini." id="pcare-create" title="Tambah Konfigurasi BPJS"><form method="POST" action="{{ route('configurations.bpjs.store') }}">@csrf @include('configurations.bpjs.form', ['configuration' => null])</form></x-pcare-modal>@endif
+            @foreach($configurations as $configuration)<x-pcare-modal subtitle="Kelola akses integrasi BPJS untuk aplikasi ini." id="pcare-edit-{{ $configuration->id }}" title="Edit Konfigurasi BPJS - {{ $configuration->id }}"><form method="POST" action="{{ route('configurations.bpjs.update', $configuration) }}">@csrf @method('PUT') @include('configurations.bpjs.form')</form></x-pcare-modal>@endforeach
         </div>
     </main>
 </div>

@@ -21,8 +21,7 @@ class BpjsConfigurationController extends Controller
         $this->authorizeSuperadmin($request);
 
         return view('configurations.bpjs.index', [
-            'clinics' => Clinic::with('bpjsConfiguration')->orderBy('name')->get(),
-            'configurations' => BpjsConfiguration::with('clinic')->orderBy('clinic_id')->get(),
+            'configurations' => BpjsConfiguration::get(),
             'pageDateLabel' => now()->translatedFormat('l, d F Y'),
         ]);
     }
@@ -30,7 +29,8 @@ class BpjsConfigurationController extends Controller
     public function store(Request $request)
     {
         $this->authorizeSuperadmin($request);
-        BpjsConfiguration::create($this->validated($request));
+        abort_if(BpjsConfiguration::exists(), 422, 'Konfigurasi BPJS aplikasi sudah ada. Gunakan Edit.');
+        BpjsConfiguration::create(['id' => 1] + $this->validated($request));
 
         return back()->with('success', 'Konfigurasi BPJS berhasil ditambahkan.');
     }
@@ -60,7 +60,6 @@ class BpjsConfigurationController extends Controller
         $secretRule = $configuration ? ['nullable', 'string'] : ['required', 'string'];
 
         return $request->validate([
-            'clinic_id' => ['required', 'exists:central.clinics,id', Rule::unique('central.bpjs_configurations', 'clinic_id')->ignore($configuration?->id)],
             'cons_id' => ['required', 'string', 'max:255'],
             'secret_key' => $secretRule,
             'user_key_antrol' => $secretRule,

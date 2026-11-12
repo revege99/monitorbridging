@@ -4,8 +4,8 @@ namespace Tests\Feature\Api;
 
 use App\Models\BpjsConfiguration;
 use App\Models\Clinic;
-use App\Models\InstallationSetting;
-use App\Services\ActiveInstallation;
+use App\Services\ClinicContext;
+use App\Services\LocalClinic;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -44,7 +44,7 @@ class AntreanFktpCancelTest extends TestCase
         });
         Schema::connection('central')->create('service_logs', function (Blueprint $table) {
             $table->id();
-            $table->integer('clinic_id');
+            $table->integer('clinic_id')->nullable();
             foreach (['service_name', 'level', 'status', 'reference', 'message'] as $column) {
                 $table->text($column);
             }
@@ -80,9 +80,9 @@ class AntreanFktpCancelTest extends TestCase
         $bpjs->user_key_pcare = 'pcare-key';
         $clinic = new Clinic;
         $clinic->setRelation('bpjsConfiguration', $bpjs);
-        $installation = new InstallationSetting(['clinic_id' => 1]);
-        $installation->setRelation('clinic', $clinic);
-        $this->mock(ActiveInstallation::class, function ($mock) use ($installation) {
+        $installation = new ClinicContext($clinic);
+
+        $this->mock(LocalClinic::class, function ($mock) use ($installation) {
             $mock->shouldReceive('resolve')->andReturn($installation);
             $mock->shouldReceive('configureClinicDatabase')->with($installation)->andReturnNull();
         });

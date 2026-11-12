@@ -17,11 +17,13 @@ Artisan::command('app:install', function () {
     $dsn = "mysql:host={$config['host']};port={$config['port']};charset=utf8mb4";
     $pdo = new PDO($dsn, $config['username'], $config['password'], [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
     $pdo->exec("CREATE DATABASE IF NOT EXISTS `{$database}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
-    $this->call('migrate', ['--database' => 'central', '--force' => true]);
-    $clinic = Clinic::firstOrCreate(['code' => 'KLINIK-001'], [
-        'name' => env('APP_NAME', 'Klinik Utama'), 'is_active' => true,
+    if ($this->call('migrate', ['--database' => 'central', '--force' => true]) !== 0) {
+        return 1;
+    }
+    $clinic = Clinic::firstOrCreate(['id' => 1], [
+        'code' => 'KLINIK-001', 'name' => env('APP_NAME', 'Klinik Utama'), 'is_active' => true,
     ]);
-    ClinicDatabase::firstOrCreate(['clinic_id' => $clinic->id], [
+    ClinicDatabase::firstOrCreate(['id' => 1], [
         'connection_name' => 'SIMRS Utama', 'driver' => 'mariadb',
         'host' => env('DB_HOST', '127.0.0.1'), 'port' => env('DB_PORT', 3306),
         'database_name' => env('DB_DATABASE'), 'username' => env('DB_USERNAME', 'root'),

@@ -3,7 +3,7 @@
 namespace App\Services;
 
 use App\Models\BaseUrlConfiguration;
-use App\Models\InstallationSetting;
+use App\Services\ClinicContext;
 use Illuminate\Support\Facades\Http;
 use LZCompressor\LZString;
 use RuntimeException;
@@ -11,7 +11,7 @@ use Throwable;
 
 class PcareOnlineRegistrationService
 {
-    public function register(InstallationSetting $installation, string $cardNumber, string $providerCode, string $pcarePoliCode, ?array &$requestDebug = null): array
+    public function register(ClinicContext $installation, string $cardNumber, string $providerCode, string $pcarePoliCode, ?array &$requestDebug = null): array
     {
         $cardNumber = preg_replace('/\D/', '', $cardNumber);
         if (strlen($cardNumber) !== 13) throw new RuntimeException('Nomor kartu BPJS harus terdiri dari 13 digit.');

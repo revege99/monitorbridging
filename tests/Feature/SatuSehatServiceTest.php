@@ -3,10 +3,10 @@
 namespace Tests\Feature;
 
 use App\Models\Clinic;
-use App\Models\InstallationSetting;
+use App\Services\ClinicContext;
 use App\Models\SatuSehatConfiguration;
 use App\Models\ServiceRun;
-use App\Services\ActiveInstallation;
+use App\Services\LocalClinic;
 use App\Services\SatuSehatService;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Schema\Blueprint;
@@ -17,7 +17,7 @@ use Tests\TestCase;
 
 class SatuSehatServiceTest extends TestCase
 {
-    private InstallationSetting $installation;
+    private ClinicContext $installation;
 
     private ServiceRun $run;
 
@@ -43,7 +43,7 @@ class SatuSehatServiceTest extends TestCase
         ]);
         Schema::connection('central')->create('service_runs', function (Blueprint $table) {
             $table->id();
-            $table->integer('clinic_id');
+            $table->integer('clinic_id')->nullable();
             $table->string('service_name');
             $table->string('status');
             $table->dateTime('started_at')->nullable();
@@ -57,7 +57,7 @@ class SatuSehatServiceTest extends TestCase
         });
         Schema::connection('central')->create('service_logs', function (Blueprint $table) {
             $table->id();
-            $table->integer('clinic_id');
+            $table->integer('clinic_id')->nullable();
             $table->integer('service_run_id');
             foreach (['service_name', 'level', 'status', 'reference', 'message'] as $name) {
                 $table->text($name);
@@ -126,9 +126,9 @@ class SatuSehatServiceTest extends TestCase
         });
         SatuSehatConfiguration::create(['id' => 1, 'client_id' => 'test-client', 'client_secret' => 'test-secret', 'organization_id' => 'org-1', 'location_id' => 'loc-1']);
         $clinic = new Clinic(['name' => 'Test clinic']);
-        $this->installation = new InstallationSetting(['clinic_id' => 1]);
-        $this->installation->setRelation('clinic', $clinic);
-        $this->run = ServiceRun::create(['clinic_id' => 1, 'service_name' => 'satu_sehat', 'status' => 'running']);
+        $this->installation = new ClinicContext($clinic);
+
+        $this->run = ServiceRun::create(['service_name' => 'satu_sehat', 'status' => 'running']);
         $this->service = app(SatuSehatService::class);
         $this->service->configure($this->installation);
         Http::preventStrayRequests();
@@ -236,8 +236,8 @@ class SatuSehatServiceTest extends TestCase
 
     public function test_check_command_uses_no_bpjs_configuration_and_sends_nothing(): void
     {
-        $this->installation->clinic_id = 987654;
-        $this->mock(ActiveInstallation::class, function ($mock) {
+
+        $this->mock(LocalClinic::class, function ($mock) {
             $mock->shouldReceive('resolveForPdf')->once()->andReturn($this->installation);
             $mock->shouldReceive('configureClinicDatabase')->once()->with($this->installation);
             $mock->shouldNotReceive('resolve');
@@ -274,8 +274,8 @@ class SatuSehatServiceTest extends TestCase
     public function test_default_scan_includes_yesterday_across_month_boundary_in_jakarta(): void
     {
         $this->travelTo(CarbonImmutable::parse('2026-11-01 00:15:00', 'Asia/Jakarta'));
-        $this->installation->clinic_id = 987654;
-        $this->mock(ActiveInstallation::class, function ($mock) {
+
+        $this->mock(LocalClinic::class, function ($mock) {
             $mock->shouldReceive('resolveForPdf')->once()->andReturn($this->installation);
             $mock->shouldReceive('configureClinicDatabase')->once();
         });

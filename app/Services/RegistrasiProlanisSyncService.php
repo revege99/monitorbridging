@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\InstallationSetting;
+use App\Services\ClinicContext;
 use App\Models\ServiceLog;
 use App\Models\ServiceRun;
 use Illuminate\Support\Facades\DB;
@@ -14,7 +14,7 @@ class RegistrasiProlanisSyncService
     {
     }
 
-    public function scan(InstallationSetting $installation, ServiceRun $run, callable $output): void
+    public function scan(ClinicContext $installation, ServiceRun $run, callable $output): void
     {
         $date = now('Asia/Jakarta')->toDateString();
         $rows = DB::connection('clinic')->select($this->query(), [$date]);
@@ -41,7 +41,7 @@ class RegistrasiProlanisSyncService
         }
     }
 
-    private function sync(InstallationSetting $installation, ServiceRun $run, array $data, callable $output): void
+    private function sync(ClinicContext $installation, ServiceRun $run, array $data, callable $output): void
     {
         [$type, $number] = $this->participantIdentity($data);
         $started = microtime(true);
@@ -83,7 +83,7 @@ class RegistrasiProlanisSyncService
     }
 
     private function log(
-        InstallationSetting $installation,
+        ClinicContext $installation,
         ServiceRun $run,
         callable $output,
         string $level,
@@ -95,7 +95,7 @@ class RegistrasiProlanisSyncService
     ): void {
         ServiceLog::create([
             'service_run_id' => $run->id,
-            'clinic_id' => $installation->clinic_id,
+            
             'service_name' => 'registrasi_prolanis_sync',
             'level' => $level,
             'status' => $status,

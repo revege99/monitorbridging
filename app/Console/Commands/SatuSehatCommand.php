@@ -3,7 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\ServiceRun;
-use App\Services\ActiveInstallation;
+use App\Services\LocalClinic;
 use App\Services\SatuSehatConfigurationException;
 use App\Services\SatuSehatService;
 use Carbon\CarbonImmutable;
@@ -19,11 +19,11 @@ class SatuSehatCommand extends Command
         {--from= : Tanggal awal YYYY-MM-DD, default kemarin WIB}
         {--to= : Tanggal akhir YYYY-MM-DD, default hari ini WIB}';
 
-    protected $description = 'Kirim resource Satu Sehat untuk klinik instalasi aktif';
+    protected $description = 'Kirim resource Satu Sehat untuk klinik aplikasi';
 
     private bool $stopping = false;
 
-    public function handle(ActiveInstallation $active, SatuSehatService $service): int
+    public function handle(LocalClinic $active, SatuSehatService $service): int
     {
         $run = null;
         $handle = null;
@@ -36,10 +36,10 @@ class SatuSehatCommand extends Command
                 return self::FAILURE;
             }
             $this->dates();
-            // Resolusi instalasi tanpa mewajibkan kredensial/base URL BPJS.
+            // Konteks aplikasi tanpa mewajibkan kredensial/base URL BPJS.
             $installation = $active->resolveForPdf();
             $active->configureClinicDatabase($installation);
-            $path = storage_path('framework/satu-sehat-'.$installation->clinic_id.'.lock');
+            $path = storage_path('framework/satu-sehat.lock');
             $handle = fopen($path, 'c+');
             if (! $handle || ! flock($handle, LOCK_EX | LOCK_NB)) {
                 $this->error('Service Satu Sehat untuk klinik ini sudah berjalan atau file lock tidak dapat dibuka.');
@@ -58,7 +58,7 @@ class SatuSehatCommand extends Command
                     $this->stopping = true;
                 });
             }
-            $run = ServiceRun::create(['clinic_id' => $installation->clinic_id, 'service_name' => 'satu_sehat',
+            $run = ServiceRun::create([ 'service_name' => 'satu_sehat',
                 'status' => 'running', 'started_at' => now(), 'last_heartbeat_at' => now()]);
             $this->info('SERVICE SATU SEHAT | '.$installation->clinic->name);
             do {
@@ -98,7 +98,7 @@ class SatuSehatCommand extends Command
             }
             $this->error($e instanceof SatuSehatConfigurationException || $e instanceof \InvalidArgumentException
                 ? $e->getMessage()
-                : 'Service gagal. Periksa aktivasi klinik, konfigurasi Satu Sehat, file lock dan tabel kontrol SIMRS.');
+                : 'Service gagal. Periksa profil klinik, konfigurasi Satu Sehat, file lock dan tabel kontrol SIMRS.');
 
             return self::FAILURE;
         } finally {

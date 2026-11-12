@@ -9,7 +9,7 @@ class QueueDisplayCall extends Model
     protected $connection = 'central';
 
     protected $fillable = [
-        'clinic_id', 'queue_number', 'patient_name', 'doctor_name', 'clinic_name', 'called_at',
+         'queue_number', 'patient_name', 'doctor_name', 'clinic_name', 'called_at',
     ];
 
     protected function casts(): array

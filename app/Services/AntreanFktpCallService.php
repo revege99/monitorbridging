@@ -3,7 +3,7 @@
 namespace App\Services;
 
 use App\Models\BaseUrlConfiguration;
-use App\Models\InstallationSetting;
+use App\Services\ClinicContext;
 use App\Models\ServiceLog;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
@@ -12,7 +12,7 @@ use RuntimeException;
 
 class AntreanFktpCallService
 {
-    public function call(InstallationSetting $installation, string $noRawat, int $status = 1): array
+    public function call(ClinicContext $installation, string $noRawat, int $status = 1): array
     {
         if (!in_array($status, [1, 2], true)) {
             throw new RuntimeException('Status panggilan antrean tidak valid.');
@@ -98,8 +98,8 @@ class AntreanFktpCallService
         return $json;
     }
 
-    private function log(InstallationSetting $installation, string $reference, string $level, string $status, string $message, ?int $code, float $started): void
+    private function log(ClinicContext $installation, string $reference, string $level, string $status, string $message, ?int $code, float $started): void
     {
-        ServiceLog::create(['clinic_id' => $installation->clinic_id, 'service_name' => 'antrean_fktp_panggil', 'level' => $level, 'status' => $status, 'reference' => $reference, 'message' => $message, 'response_code' => $code, 'duration_ms' => (int) ((microtime(true) - $started) * 1000)]);
+        ServiceLog::create([ 'service_name' => 'antrean_fktp_panggil', 'level' => $level, 'status' => $status, 'reference' => $reference, 'message' => $message, 'response_code' => $code, 'duration_ms' => (int) ((microtime(true) - $started) * 1000)]);
     }
 }

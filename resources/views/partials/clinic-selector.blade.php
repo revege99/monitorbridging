@@ -1,16 +1,6 @@
 <div class="flex items-center gap-2">
     <div class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs text-slate-600">{{ $pageDateLabel }}</div>
-    @unless($hideClinicSelector ?? false)
-        @if(auth()->user()?->isSuperadmin())
-            <form method="POST" action="{{ route('clinics.select') }}" data-preserve-sidebar>@csrf
-                <select name="clinic_id" onchange="this.form.requestSubmit()" class="max-w-56 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 outline-none focus:border-cyan-400">
-                    @forelse($availableClinics ?? [] as $clinic)<option value="{{ $clinic->id }}" @selected(($activeClinic?->id ?? null) === $clinic->id)>{{ $clinic->name }}</option>@empty<option>Belum ada klinik</option>@endforelse
-                </select>
-            </form>
-        @else
-            <div class="rounded-xl border border-cyan-100 bg-cyan-50 px-4 py-2 text-xs font-semibold text-cyan-700">{{ $activeClinic?->name ?? 'Klinik belum ditetapkan' }}</div>
-        @endif
-    @endunless
+    <div class="rounded-xl border border-cyan-100 bg-cyan-50 px-4 py-2 text-xs font-semibold text-cyan-700">{{ $activeClinic?->name ?? 'Profil klinik belum diisi' }}</div>
 
     <div class="relative" data-account-menu>
         <button type="button" data-account-toggle aria-expanded="false" class="flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 text-left text-slate-700 shadow-sm transition hover:bg-slate-50">
@@ -47,6 +37,6 @@
 @once
     <script src="{{ asset('js/app-loading.js') }}" defer></script>
     <script src="{{ asset('js/content-navigation.js') }}" defer></script>
-    <script src="{{ asset('js/clinic-switcher.js') }}" defer></script>
+
     <script src="{{ asset('js/account-menu.js') }}" defer></script>
 @endonce

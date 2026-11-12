@@ -7,7 +7,7 @@ Halaman monitor service Antrean yang ada tetap khusus Antrean.
 
 ## Persiapan
 
-1. Pastikan klinik instalasi aktif dan koneksi database SIMRS benar.
+1. Pastikan profil klinik aplikasi dan koneksi database SIMRS benar. Tidak ada aktivasi instalasi.
 2. Isi Konfigurasi > Satu Sehat untuk klinik tersebut: Client ID, Client Secret,
    Organization ID, Location ID. Data disimpan di `ss_config` pada database
    SIMRS klinik terpilih, memakai koneksi database klinik yang terdaftar.
@@ -23,7 +23,7 @@ Halaman monitor service Antrean yang ada tetap khusus Antrean.
    File lock baru hanya melindungi proses dalam direktori proyek ini.
 
 Semua konfigurasi koneksi yang digunakan skrip lama tersedia di menu yang ada.
-Worker membaca `ss_config` dari koneksi `clinic` setelah instalasi aktif dipilih.
+Worker membaca `ss_config` dari koneksi `clinic` sesuai konfigurasi SIMRS tunggal aplikasi.
 Jika tabel belum ada, jalankan `database/sql/ss_config.sql` pada setiap SIMRS.
 Tabel harus memiliki `id`, `client_id`, `client_secret`, `organization_id`, dan
 `location_id`. Satu konfigurasi per database klinik; jika tabel lama memiliki
@@ -31,7 +31,7 @@ lebih dari satu baris, worker memakai ID paling kecil. Kredensial tidak lagi
 dibaca dari `central.satu_sehat_configurations`. Data central lama tidak dihapus
 atau dipindahkan otomatis; isi/verifikasi konfigurasi di menu sesuai kliniknya.
 Worker memakai resolver instalasi tanpa dependensi kredensial BPJS.
-Aktivasi klinik lewat UI masih mengikuti persyaratan aktivasi proyek yang ada.
+Upgrade versi multi-klinik mengikuti `docs/single-clinic-deployment.md`.
 
 ```shell
 php artisan service:satu-sehat --check

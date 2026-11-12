@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\InstallationSetting;
+use App\Services\ClinicContext;
 use App\Models\SatuSehatBaseUrlConfiguration;
 use App\Models\SatuSehatConfiguration;
 use App\Models\ServiceLog;
@@ -23,7 +23,7 @@ class SatuSehatService
 
     private array $tables = [];
 
-    private InstallationSetting $installation;
+    private ClinicContext $installation;
 
     private ServiceRun $run;
 
@@ -31,7 +31,7 @@ class SatuSehatService
 
     public function __construct(private SatuSehatClient $client) {}
 
-    public function configure(InstallationSetting $installation): void
+    public function configure(ClinicContext $installation): void
     {
         if (! Schema::connection('clinic')->hasTable('ss_config')) {
             throw new SatuSehatConfigurationException('Jalankan database/sql/ss_config.sql pada database SIMRS aktif, lalu isi Konfigurasi > Satu Sehat.');
@@ -51,7 +51,7 @@ class SatuSehatService
         }
     }
 
-    public function scan(InstallationSetting $installation, ServiceRun $run, string $from, string $to, callable $output): void
+    public function scan(ClinicContext $installation, ServiceRun $run, string $from, string $to, callable $output): void
     {
         $this->installation = $installation;
         $this->run = $run;
@@ -619,7 +619,7 @@ class SatuSehatService
 
     private function log(string $level, string $status, string $no, string $message, ?int $code = null): void
     {
-        ServiceLog::create(['clinic_id' => $this->installation->clinic_id, 'service_run_id' => $this->run->id,
+        ServiceLog::create([ 'service_run_id' => $this->run->id,
             'service_name' => 'satu_sehat', 'level' => $level, 'status' => $status, 'reference' => $no,
             'message' => $message, 'response_code' => $code]);
         ($this->output)($level, $no.' | '.$message);

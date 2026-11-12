@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'username', 'email', 'password', 'role', 'clinic_id', 'is_active'])]
+#[Fillable(['name', 'username', 'email', 'password', 'role',  'is_active'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -18,11 +18,6 @@ class User extends Authenticatable
     use HasFactory, Notifiable;
 
     protected $connection = 'central';
-
-    public function clinic()
-    {
-        return $this->belongsTo(Clinic::class);
-    }
 
     public function isSuperadmin(): bool
     {

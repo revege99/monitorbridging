@@ -47,8 +47,8 @@ agar tidak terpisah. Tidak ada tanda tangan elektronik atau tanda tangan otomati
 
 ## Sumber data surat
 
-Seluruh query memakai koneksi **clinic** dari instalasi aktif, tanpa memanggil
-API BPJS. `ActiveInstallation::resolveForPdf()` hanya mensyaratkan klinik aktif
+Seluruh query memakai koneksi **clinic** dari konfigurasi tunggal aplikasi, tanpa memanggil
+API BPJS. `LocalClinic::resolveForPdf()` hanya mensyaratkan profil aplikasi aktif
 dan konfigurasi database; konfigurasi credential/base URL BPJS tidak diperlukan.
 
 | Isi | Sumber |
@@ -142,8 +142,8 @@ tautan sementara untuk alur browser ini.
    orientasi, kop, font, serta tanda tangan.
 2. Buat service data per dokumen dengan koneksi database klinik yang benar dan
    query berparameter. Pastikan kunjungan tersedia. Jangan query dari Blade.
-   Gunakan `ActiveInstallation::resolveForPdf()` dan `configureClinicDatabase()`
-   untuk memilih koneksi instalasi aktif tanpa ketergantungan API BPJS.
+   Gunakan `LocalClinic::resolveForPdf()` dan `configureClinicDatabase()`
+   untuk memakai koneksi SIMRS aplikasi tanpa ketergantungan API BPJS.
 3. Buat controller invokable dengan `PrintPdfRequest` atau turunannya, panggil
    service, lalu gunakan `PdfRenderer` untuk merender template dan respons PDF.
 4. Tambahkan route eksplisit di `routes/pdf.php`, misalnya:

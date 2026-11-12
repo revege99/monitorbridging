@@ -3,7 +3,7 @@
 namespace App\Services;
 
 use App\Models\BaseUrlConfiguration;
-use App\Models\InstallationSetting;
+use App\Services\ClinicContext;
 use App\Models\ServiceLog;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -11,7 +11,7 @@ use RuntimeException;
 
 class AntreanFktpCancelService
 {
-    public function cancel(InstallationSetting $installation, string $noRawat, string $alasan): array
+    public function cancel(ClinicContext $installation, string $noRawat, string $alasan): array
     {
         $patient = DB::connection('clinic')->table('reg_periksa as rp')
             ->join('pasien as ps', 'ps.no_rkm_medis', '=', 'rp.no_rkm_medis')
@@ -94,8 +94,8 @@ class AntreanFktpCancelService
         return $json;
     }
 
-    private function log(InstallationSetting $installation, string $reference, string $level, string $status, string $message, ?int $code, float $started): void
+    private function log(ClinicContext $installation, string $reference, string $level, string $status, string $message, ?int $code, float $started): void
     {
-        ServiceLog::create(['clinic_id' => $installation->clinic_id, 'service_name' => 'antrean_fktp_batal', 'level' => $level, 'status' => $status, 'reference' => $reference, 'message' => $message, 'response_code' => $code, 'duration_ms' => (int) ((microtime(true) - $started) * 1000)]);
+        ServiceLog::create([ 'service_name' => 'antrean_fktp_batal', 'level' => $level, 'status' => $status, 'reference' => $reference, 'message' => $message, 'response_code' => $code, 'duration_ms' => (int) ((microtime(true) - $started) * 1000)]);
     }
 }

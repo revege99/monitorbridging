@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Services\ActiveInstallation;
+use App\Services\LocalClinic;
 use App\Services\AntreanFktpCancelService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -11,7 +11,7 @@ use Throwable;
 
 class AntreanFktpCancelController extends Controller
 {
-    public function __invoke(Request $request, ActiveInstallation $active, AntreanFktpCancelService $service): JsonResponse
+    public function __invoke(Request $request, LocalClinic $active, AntreanFktpCancelService $service): JsonResponse
     {
         $configuredToken = (string) config('services.khanza.integration_token');
         $providedToken = (string) $request->header('X-Integration-Token');

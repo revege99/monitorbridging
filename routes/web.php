@@ -20,7 +20,7 @@ use App\Http\Controllers\BpjsConfigurationController;
 use App\Http\Controllers\SatuSehatConfigurationController;
 use App\Http\Controllers\BaseUrlConfigurationController;
 use App\Http\Controllers\SatuSehatBaseUrlConfigurationController;
-use App\Http\Controllers\InstallationController;
+use App\Http\Controllers\ServiceMonitorController;
 use App\Http\Controllers\QueueDisplayController;
 use App\Http\Controllers\KioskController;
 use App\Http\Controllers\DashboardController;
@@ -41,11 +41,9 @@ Route::middleware('guest')->group(function () {
 Route::middleware(['auth', ConfigureClinicDatabase::class])->group(function () {
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 Route::post('/akun/password', [AuthController::class, 'updatePassword'])->name('account.password.update');
-Route::post('/klinik/aktif', [SetupClinicController::class, 'selectClinic'])->name('clinics.select');
 Route::get('/setup-klinik', [SetupClinicController::class, 'index'])->name('setup.index');
 Route::post('/setup-klinik/profil', [SetupClinicController::class, 'storeClinic'])->name('setup.clinics.store');
 Route::put('/setup-klinik/profil/{clinic}', [SetupClinicController::class, 'updateClinic'])->name('setup.clinics.update');
-Route::delete('/setup-klinik/profil/{clinic}', [SetupClinicController::class, 'deleteClinic'])->name('setup.clinics.destroy');
 Route::post('/setup-klinik/database', [SetupClinicController::class, 'saveDatabase'])->name('setup.database.save');
 Route::post('/setup-klinik/database/test', [SetupClinicController::class, 'testDatabase'])->name('setup.database.test');
 Route::post('/setup-klinik/users', [SetupClinicController::class, 'storeUser'])->name('setup.users.store');
@@ -68,10 +66,8 @@ Route::get('/konfigurasi-bridging/base-url-satu-sehat', [SatuSehatBaseUrlConfigu
 Route::post('/konfigurasi-bridging/base-url-satu-sehat', [SatuSehatBaseUrlConfigurationController::class, 'store'])->name('configurations.satu-sehat-base-url.store');
 Route::put('/konfigurasi-bridging/base-url-satu-sehat/{satuSehatBaseUrlConfiguration}', [SatuSehatBaseUrlConfigurationController::class, 'update'])->name('configurations.satu-sehat-base-url.update');
 Route::delete('/konfigurasi-bridging/base-url-satu-sehat/{satuSehatBaseUrlConfiguration}', [SatuSehatBaseUrlConfigurationController::class, 'destroy'])->name('configurations.satu-sehat-base-url.destroy');
-Route::get('/aktivasi-instalasi', [InstallationController::class, 'index'])->name('installation.index');
-Route::post('/aktivasi-instalasi', [InstallationController::class, 'activate'])->name('installation.activate');
-Route::get('/service-monitor/antrean', [InstallationController::class, 'monitor'])->name('service-monitor.index');
-Route::get('/service-monitor/antrean/logs', [InstallationController::class, 'logs'])->name('service-monitor.logs');
+Route::get('/service-monitor/antrean', [ServiceMonitorController::class, 'monitor'])->name('service-monitor.index');
+Route::get('/service-monitor/antrean/logs', [ServiceMonitorController::class, 'logs'])->name('service-monitor.logs');
 
 Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 Route::get('/monitoring/bridging-pelayanan', [BridgingPelayananController::class, 'index'])->name('monitoring.bridging-pelayanan');
