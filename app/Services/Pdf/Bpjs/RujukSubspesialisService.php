@@ -2,12 +2,13 @@
 
 namespace App\Services\Pdf\Bpjs;
 
+use App\Models\Clinic;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
 class RujukSubspesialisService
 {
-    public function data(string $noRawat): array
+    public function data(string $noRawat, ?Clinic $profile = null): array
     {
         $db = DB::connection('clinic');
         $referral = $db->table('pcare_rujuk_subspesialis as prs')
@@ -38,6 +39,8 @@ class RujukSubspesialisService
             'referral_number' => $this->value($referral->noKunjungan),
             'facility' => $this->facilityName($setting->nama_instansi, $setting->kode_ppk),
             'district' => $this->value($setting->kabupaten),
+            'regional' => $this->value($profile?->bpjs_divisi_regional),
+            'branch_office' => $this->value($profile?->bpjs_kantor_cabang),
             'subspecialty' => $this->value($referral->nmSubSpesialis),
             'destination' => $this->value($referral->nmPPK),
             'patient_name' => $this->value($referral->nm_pasien),

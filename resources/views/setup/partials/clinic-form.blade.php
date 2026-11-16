@@ -1,6 +1,6 @@
 @php($clinic = $clinic ?? null)
 <div class="grid gap-4 sm:grid-cols-2">
-@foreach(['code'=>'Kode Klinik *','name'=>'Nama Klinik *','legal_name'=>'Nama Legal','phone'=>'Telepon','email'=>'Email','city'=>'Kota','province'=>'Provinsi','postal_code'=>'Kode Pos'] as $name=>$label)
+@foreach(['code'=>'Kode Klinik *','name'=>'Nama Klinik *','legal_name'=>'Nama Legal','phone'=>'Telepon','email'=>'Email','city'=>'Kota','province'=>'Provinsi','postal_code'=>'Kode Pos','bpjs_divisi_regional'=>'Divisi Regional BPJS','bpjs_kantor_cabang'=>'Kantor Cabang BPJS'] as $name=>$label)
 <label class="text-xs font-medium text-slate-600">{{ $label }}<input name="{{ $name }}" value="{{ old($name, $clinic?->{$name} ?? ($name === 'code' ? $nextClinicCode : null)) }}" {{ in_array($name,['code','name'])?'required':'' }} class="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-cyan-400">@if($name === 'code' && !$clinic)<span class="mt-1 block text-[11px] font-normal text-slate-400">Dibuat otomatis dan tetap dapat diubah.</span>@endif</label>
 @endforeach
 <label class="text-xs font-medium text-slate-600 sm:col-span-2">Alamat<textarea name="address" rows="3" class="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-cyan-400">{{ old('address',$clinic?->address) }}</textarea></label>

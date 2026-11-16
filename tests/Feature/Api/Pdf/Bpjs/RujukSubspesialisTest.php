@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Api\Pdf\Bpjs;
 
+use App\Models\Clinic;
 use App\Services\ClinicContext;
 use App\Services\LocalClinic;
 use App\Services\Pdf\Bpjs\RujukSubspesialisService;
@@ -48,7 +49,11 @@ class RujukSubspesialisTest extends TestCase
 
         config(['services.khanza.integration_token' => 'pdf-test-token', 'app.debug' => false]);
         $this->mock(LocalClinic::class, function (MockInterface $mock) {
-            $context = new ClinicContext;
+            $profile = new Clinic([
+                'bpjs_divisi_regional' => 'REGIONAL I-SUMATERA UTARA',
+                'bpjs_kantor_cabang' => 'KABANJAHE',
+            ]);
+            $context = new ClinicContext($profile);
             $mock->shouldReceive('resolveForPdf')->andReturn($context);
             $mock->shouldReceive('configureClinicDatabase')->with($context)->andReturnNull();
         });
@@ -56,13 +61,19 @@ class RujukSubspesialisTest extends TestCase
 
     public function test_uses_bpjs_referral_data_and_formats_facility_like_the_official_document(): void
     {
-        $data = app(RujukSubspesialisService::class)->data(self::NO_RAWAT);
+        $profile = new Clinic([
+            'bpjs_divisi_regional' => 'REGIONAL I-SUMATERA UTARA',
+            'bpjs_kantor_cabang' => 'KABANJAHE',
+        ]);
+        $data = app(RujukSubspesialisService::class)->data(self::NO_RAWAT, $profile);
 
         $this->assertSame('0030B0111126Y000364', $data['referral_number']);
         $this->assertSame('Klinik Pratama Contoh(0030B011)', $data['facility']);
         $this->assertSame('Sidikalang', $data['district']);
         $this->assertSame('14 April 1954', $data['birth_date']);
         $this->assertSame('13 Februari 2027', $data['valid_until']);
+        $this->assertSame('REGIONAL I-SUMATERA UTARA', $data['regional']);
+        $this->assertSame('KABANJAHE', $data['branch_office']);
     }
 
     public function test_returns_a_single_page_referral_pdf(): void

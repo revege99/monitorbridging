@@ -33,8 +33,8 @@
             <tr>
                 <td class="top-logo">@include('pdf.partials.bpjs-logo', ['width' => '53mm'])</td>
                 <td class="regional">
-                    <span class="regional-label">Divisi Regional</span>: -<br>
-                    <span class="regional-label">Kantor Cabang</span>: -
+                    <span class="regional-label">Divisi Regional</span>: {{ $regional }}<br>
+                    <span class="regional-label">Kantor Cabang</span>: {{ $branch_office }}
                 </td>
             </tr>
         </table>

@@ -60,7 +60,10 @@ class SetupClinicController extends Controller
             'legal_name' => ['nullable', 'string', 'max:255'], 'phone' => ['nullable', 'string', 'max:30'],
             'email' => ['nullable', 'email', 'max:255'], 'address' => ['nullable', 'string'],
             'city' => ['nullable', 'string', 'max:100'], 'province' => ['nullable', 'string', 'max:100'],
-            'postal_code' => ['nullable', 'string', 'max:10'], 'is_active' => ['boolean'],
+            'postal_code' => ['nullable', 'string', 'max:10'],
+            'bpjs_divisi_regional' => ['nullable', 'string', 'max:150'],
+            'bpjs_kantor_cabang' => ['nullable', 'string', 'max:150'],
+            'is_active' => ['boolean'],
         ]) + ['is_active' => $request->boolean('is_active')];
     }
 

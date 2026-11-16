@@ -24,6 +24,7 @@ class SingleClinicConfigurationTest extends TestCase
         config(['database.connections.central' => ['driver' => 'sqlite', 'database' => ':memory:', 'prefix' => '']]);
         DB::purge('central');
         (require database_path('migrations/2026_11_12_000001_use_single_clinic_application_configuration.php'))->up();
+        (require database_path('migrations/2026_11_16_000001_add_bpjs_referral_office_to_application_profiles.php'))->up();
         Schema::connection('central')->create('users', function (Blueprint $table) {
             $table->id();
             $table->string('name');
@@ -48,7 +49,12 @@ class SingleClinicConfigurationTest extends TestCase
     public function test_profile_database_and_admin_save_without_clinic_id(): void
     {
         $controller = new SetupClinicController;
-        $controller->storeClinic($this->request(['name' => 'Klinik Lokal', 'is_active' => true]));
+        $controller->storeClinic($this->request([
+            'name' => 'Klinik Lokal',
+            'bpjs_divisi_regional' => 'REGIONAL I-SUMATERA UTARA',
+            'bpjs_kantor_cabang' => 'KABANJAHE',
+            'is_active' => true,
+        ]));
         $database = ['connection_name' => 'SIMRS', 'host' => '127.0.0.1', 'port' => 3306,
             'database_name' => 'sik', 'username' => 'test', 'password' => 'db-secret', 'collation' => 'utf8mb4_unicode_ci'];
         $controller->saveDatabase($this->request($database));
@@ -56,6 +62,8 @@ class SingleClinicConfigurationTest extends TestCase
         $controller->saveDatabase($this->request($database));
         $this->assertSame('db-secret', ClinicDatabase::first()->password);
         $this->assertSame('sik', Clinic::first()->database->database_name);
+        $this->assertSame('REGIONAL I-SUMATERA UTARA', Clinic::first()->bpjs_divisi_regional);
+        $this->assertSame('KABANJAHE', Clinic::first()->bpjs_kantor_cabang);
         $this->assertDatabaseCount('application_database_configurations', 1, 'central');
         $controller->storeUser($this->request(['name' => 'Admin', 'username' => 'admin', 'email' => 'admin@example.test',
             'password' => 'test-password', 'password_confirmation' => 'test-password', 'role' => 'admin']));

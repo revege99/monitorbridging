@@ -26,7 +26,7 @@ class RujukSubspesialisController extends Controller
 
         try {
             $noRawat = $request->validated('no_rawat');
-            $data = $service->data($noRawat);
+            $data = $service->data($noRawat, $installation->clinic);
             $filename = 'rujukSubspesialis-'.preg_replace('/[^A-Za-z0-9_-]/', '-', $noRawat).'.pdf';
 
             return $renderer->inline(
