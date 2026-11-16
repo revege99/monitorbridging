@@ -4,12 +4,12 @@
 
 @section('styles')
     @page { margin: 9mm 12mm 8mm; }
-    body { font-family: 'Times New Roman', Times, serif; font-size: 8.5pt; line-height: 1.17; }
+    body { font-family: 'Times New Roman', Times, serif; font-size: 10pt; line-height: 1.17; }
     .sheet { min-height: 268mm; border: 0.7pt solid #111; box-sizing: border-box; padding: 6mm 5mm 5mm; }
     .top-logo { width: 46%; padding-top: 1mm; }
-    .regional { width: 54%; padding-top: 1mm; font-size: 8.5pt; font-weight: bold; }
+    .regional { width: 54%; padding-top: 1mm; font-size: 10pt; font-weight: bold; }
     .regional-label { display: inline-block; width: 27mm; }
-    .title { text-align: center; font-size: 12pt; font-weight: bold; margin: 7mm 0 1.5mm; }
+    .title { text-align: center; font-size: 14pt; font-weight: bold; margin: 7mm 0 1.5mm; }
     .box { border: 0.6pt solid #111; }
     .box td { padding: 1mm 1.5mm; }
     .box-label { width: 32%; }
@@ -17,12 +17,12 @@
     .recipient { margin-top: 4mm; }
     .patient { margin-top: 5mm; }
     .patient td { padding: 0 0 1.4mm; }
-    .closing { margin-top: 2.5mm; }
-    .schedule-note { font-size: 8pt; padding-top: 1.5mm; }
+    .closing { margin-top: 2.5mm; font-size: 9pt; }
+    .schedule-note { font-size: 9pt; padding-top: 1.5mm; }
     .return { margin-top: 7mm; page-break-inside: avoid; }
     .return hr { border: 0; border-top: 0.7pt solid #111; margin: 0 0 2mm; }
-    .section-title { text-align: center; font-size: 11pt; font-weight: bold; margin: 2mm 0 2.5mm; }
-    .small { font-size: 8pt; }
+    .section-title { text-align: center; font-size: 13pt; font-weight: bold; margin: 2mm 0 2.5mm; }
+    .small { font-size: 9pt; }
     .check { display: inline-block; width: 3.5mm; height: 3.5mm; border: 0.7pt solid #111; vertical-align: middle; }
     .signature { height: 21mm; }
 @endsection
