@@ -27,7 +27,7 @@ class RujukSubspesialisService
         $setting = $db->table('setting')
             ->orderByRaw("CASE WHEN aktifkan = 'Yes' THEN 0 ELSE 1 END")
             ->orderBy('nama_instansi')
-            ->first(['nama_instansi', 'kabupaten']);
+            ->first(['kode_ppk', 'nama_instansi', 'kabupaten']);
         abort_if($setting === null || trim((string) $setting->nama_instansi) === '', 503,
             'Identitas fasilitas pada tabel setting belum tersedia.');
 
@@ -36,7 +36,7 @@ class RujukSubspesialisService
 
         return [
             'referral_number' => $this->value($referral->noKunjungan),
-            'facility' => $this->value($setting->nama_instansi),
+            'facility' => $this->facilityName($setting->nama_instansi, $setting->kode_ppk),
             'district' => $this->value($setting->kabupaten),
             'subspecialty' => $this->value($referral->nmSubSpesialis),
             'destination' => $this->value($referral->nmPPK),
@@ -49,6 +49,7 @@ class RujukSubspesialisService
             },
             'diagnosis' => $this->value($referral->nmDiag1),
             'tacc_reason' => $this->value($referral->alasanTACC),
+            'has_tacc_reason' => trim((string) $referral->alasanTACC) !== '',
             'schedule' => $this->value($referral->jadwalFaskes),
             'referral_date' => $referralDate?->format('d/m/Y') ?? '-',
             'valid_until' => $this->indonesianDate($validUntil?->format('Y-m-d')),
@@ -90,5 +91,13 @@ class RujukSubspesialisService
         ];
 
         return $date->day.' '.$months[$date->month].' '.$date->year;
+    }
+
+    private function facilityName(?string $name, ?string $code): string
+    {
+        $name = $this->value($name);
+        $code = trim((string) $code);
+
+        return $code === '' || $code === '-' ? $name : $name.'('.$code.')';
     }
 }
