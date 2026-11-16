@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\Pdf\Bpjs\SppFktpController;
+use App\Http\Controllers\Api\Pdf\Bpjs\RujukSubspesialisController;
 use App\Http\Middleware\AuthenticatePdfIntegration;
 use Illuminate\Support\Facades\Route;
 
@@ -10,4 +11,8 @@ Route::prefix('bpjs')->name('bpjs.')->group(function () {
         ->withoutMiddleware(AuthenticatePdfIntegration::class)
         ->name('sppFKTP');
     Route::post('sppFKTP', SppFktpController::class)->name('sppFKTP.post');
+    Route::get('rujukSubspesialis', RujukSubspesialisController::class)
+        ->withoutMiddleware(AuthenticatePdfIntegration::class)
+        ->name('rujukSubspesialis');
+    Route::post('rujukSubspesialis', RujukSubspesialisController::class)->name('rujukSubspesialis.post');
 });

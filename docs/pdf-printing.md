@@ -30,6 +30,20 @@ tests/Feature/Api/Pdf/
 
 Dokumen pertama: **sppFKTP — Surat Pernyataan Pelayanan di FKTP**.
 
+Dokumen BPJS berikutnya: **rujukSubspesialis — Surat Rujukan FKTP dan Surat Rujukan Balik**.
+
+- Controller: `app/Http/Controllers/Api/Pdf/Bpjs/RujukSubspesialisController.php`
+- Service: `app/Services/Pdf/Bpjs/RujukSubspesialisService.php`
+- Template: `resources/views/pdf/documents/bpjs/rujukSubspesialis.blade.php`
+- Endpoint aktif: `GET|POST /api/integration/pdf/bpjs/rujukSubspesialis`
+- Parameter: `no_rawat`; parameter legacy lain tidak diperlukan.
+- Ukuran awal A4 portrait.
+
+Integrasi Java Khanza dapat membuka endpoint GET dengan pola yang sama seperti
+sppFKTP. Path dokumen Java bila ingin membuat helper khusus: `src/bridging/pdf/RujukSubspesialisClient.java`.
+Query URL: `?no_rawat=` diikuti nilai yang di-URL-encode. GET tidak memerlukan token;
+POST tetap menggunakan `X-Integration-Token`.
+
 - Controller: `app/Http/Controllers/Api/Pdf/Bpjs/SppFktpController.php`
 - Service: `app/Services/Pdf/Bpjs/SppFktpService.php`
 - Template: `resources/views/pdf/documents/bpjs/sppFKTP.blade.php`
