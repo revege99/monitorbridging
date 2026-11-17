@@ -10,7 +10,7 @@ class Clinic extends Model
 
     protected $table = 'application_profiles';
 
-    protected $fillable = ['id', 'code', 'name', 'legal_name', 'phone', 'email', 'address', 'city', 'province', 'postal_code', 'bpjs_divisi_regional', 'bpjs_kantor_cabang', 'is_active'];
+    protected $fillable = ['id', 'code', 'name', 'legal_name', 'phone', 'email', 'address', 'city', 'province', 'postal_code', 'bpjs_divisi_regional', 'bpjs_kantor_cabang', 'logo_path', 'is_active'];
 
     protected function casts(): array
     {

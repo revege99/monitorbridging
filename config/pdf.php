@@ -10,5 +10,9 @@ return [
             'paper' => 'a4',
             'orientation' => 'portrait',
         ],
+        'suratKeteranganSehat' => [
+            'paper' => 'a4',
+            'orientation' => 'portrait',
+        ],
     ],
 ];

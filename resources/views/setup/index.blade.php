@@ -47,8 +47,8 @@
                     </tbody></table></div>
                 </section>
 
-                @if($clinics->isEmpty())<x-pcare-modal subtitle="Kelola data dan pengaturan klinik." id="clinic-create" title="Tambah Klinik"><form method="POST" action="{{ route('setup.clinics.store') }}">@csrf @include('setup.partials.clinic-form', ['clinic' => null])</form></x-pcare-modal>@endif
-                @foreach($clinics as $clinic)<x-pcare-modal subtitle="Kelola data dan pengaturan klinik." id="clinic-edit-{{ $clinic->id }}" title="Edit Profil Klinik"><form method="POST" action="{{ route('setup.clinics.update',$clinic) }}">@csrf @method('PUT') @include('setup.partials.clinic-form', ['clinic' => $clinic])</form></x-pcare-modal>@endforeach
+                @if($clinics->isEmpty())<x-pcare-modal subtitle="Kelola data dan pengaturan klinik." id="clinic-create" title="Tambah Klinik"><form method="POST" action="{{ route('setup.clinics.store') }}" enctype="multipart/form-data">@csrf @include('setup.partials.clinic-form', ['clinic' => null])</form></x-pcare-modal>@endif
+                @foreach($clinics as $clinic)<x-pcare-modal subtitle="Kelola data dan pengaturan klinik." id="clinic-edit-{{ $clinic->id }}" title="Edit Profil Klinik"><form method="POST" action="{{ route('setup.clinics.update',$clinic) }}" enctype="multipart/form-data">@csrf @method('PUT') @include('setup.partials.clinic-form', ['clinic' => $clinic])</form></x-pcare-modal>@endforeach
 
             @elseif($tab === 'database')
                 <section class="pcare-card setup-management-card">

@@ -7,6 +7,7 @@ use App\Models\ClinicDatabase;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Throwable;
 
@@ -44,12 +45,12 @@ class SetupClinicController extends Controller
     public function updateClinic(Request $request, Clinic $clinic)
     {
         $this->authorizeSuperadmin($request);
-        $clinic->update($this->profileData($request));
+        $clinic->update($this->profileData($request, $clinic));
 
         return back()->with('success', 'Profil klinik aplikasi diperbarui.');
     }
 
-    private function profileData(Request $request): array
+    private function profileData(Request $request, ?Clinic $clinic = null): array
     {
         if (blank($request->input('code'))) {
             $request->merge(['code' => 'KLN-0001']);
@@ -63,8 +64,19 @@ class SetupClinicController extends Controller
             'postal_code' => ['nullable', 'string', 'max:10'],
             'bpjs_divisi_regional' => ['nullable', 'string', 'max:150'],
             'bpjs_kantor_cabang' => ['nullable', 'string', 'max:150'],
+            'logo' => ['nullable', 'image', 'mimes:png,jpg,jpeg', 'max:2048'],
             'is_active' => ['boolean'],
-        ]) + ['is_active' => $request->boolean('is_active')];
+        ]);
+
+        if ($request->hasFile('logo')) {
+            if ($clinic?->logo_path) {
+                Storage::disk('public')->delete($clinic->logo_path);
+            }
+            $data['logo_path'] = $request->file('logo')->store('clinic-logos', 'public');
+        }
+        unset($data['logo']);
+
+        return $data + ['is_active' => $request->boolean('is_active')];
     }
 
     public function saveDatabase(Request $request)
