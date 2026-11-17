@@ -26,7 +26,7 @@ class HealthCertificateService
         abort_if($letter === null, 404, 'Data surat keterangan sehat tidak ditemukan.');
 
         $setting = $db->table('setting')->orderByRaw("CASE WHEN aktifkan = 'Yes' THEN 0 ELSE 1 END")->first([
-            'nama_instansi', 'alamat_instansi', 'kabupaten', 'propinsi', 'kontak', 'email',
+            'yayasan', 'nama_instansi', 'alamat_instansi', 'kabupaten', 'propinsi', 'kontak', 'email',
         ]);
         abort_if($setting === null || blank($setting->nama_instansi), 503, 'Identitas fasilitas pada tabel setting belum tersedia.');
 
@@ -34,7 +34,7 @@ class HealthCertificateService
 
         return [
             'letter_number' => $this->value($letter->no_surat),
-            'legal_name' => $this->value($profile->legal_name, $setting->nama_instansi),
+            'legal_name' => $this->value($setting->yayasan, $setting->nama_instansi),
             'facility_name' => $this->value($setting->nama_instansi),
             'facility_address' => collect([$setting->alamat_instansi, $setting->kabupaten, $setting->propinsi])->filter()->join(', '),
             'facility_contact' => $this->contact($setting->kontak, $setting->email),
@@ -64,7 +64,7 @@ class HealthCertificateService
             }
         }
 
-return '-';
+        return '-';
     }
 
     private function date(?string $value): ?CarbonImmutable
@@ -88,7 +88,7 @@ return '-';
             $values[] = 'Email: '.trim($email);
         }
 
-return implode(' | ', $values);
+        return implode(' | ', $values);
     }
 
     private function indonesianDate(?string $value): string
