@@ -10,8 +10,10 @@ use App\Models\ClinicDatabase;
 use App\Models\User;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\TestCase;
@@ -25,6 +27,7 @@ class SingleClinicConfigurationTest extends TestCase
         DB::purge('central');
         (require database_path('migrations/2026_11_12_000001_use_single_clinic_application_configuration.php'))->up();
         (require database_path('migrations/2026_11_16_000001_add_bpjs_referral_office_to_application_profiles.php'))->up();
+        (require database_path('migrations/2026_11_16_000002_add_logo_path_to_application_profiles.php'))->up();
         Schema::connection('central')->create('users', function (Blueprint $table) {
             $table->id();
             $table->string('name');
@@ -37,9 +40,9 @@ class SingleClinicConfigurationTest extends TestCase
         });
     }
 
-    private function request(array $data): Request
+    private function request(array $data, array $files = []): Request
     {
-        $request = Request::create('/setup-klinik', 'POST', $data);
+        $request = Request::create('/setup-klinik', 'POST', $data, [], $files);
         $request->setLaravelSession(app('session')->driver());
         $request->setUserResolver(fn () => new User(['role' => 'superadmin', 'is_active' => true]));
 
@@ -68,6 +71,24 @@ class SingleClinicConfigurationTest extends TestCase
         $controller->storeUser($this->request(['name' => 'Admin', 'username' => 'admin', 'email' => 'admin@example.test',
             'password' => 'test-password', 'password_confirmation' => 'test-password', 'role' => 'admin']));
         $this->assertDatabaseHas('users', ['username' => 'admin', 'role' => 'admin'], 'central');
+    }
+
+    public function test_profile_logo_is_saved_and_remains_available_for_later_edit(): void
+    {
+        Storage::fake('public');
+        $controller = new SetupClinicController;
+        $controller->storeClinic($this->request(['name' => 'Klinik Lokal', 'is_active' => true]));
+        $clinic = Clinic::first();
+        $controller->updateClinic($this->request([
+            'code' => $clinic->code,
+            'name' => $clinic->name,
+            'is_active' => true,
+        ], ['logo' => UploadedFile::fake()->image('kop.png', 120, 120)]), $clinic);
+
+        $path = $clinic->fresh()->logo_path;
+        $this->assertNotNull($path);
+        Storage::disk('public')->assertExists($path);
+        $this->assertStringStartsWith('clinic-logos/', $path);
     }
 
     public function test_bpjs_is_singleton_and_preserves_encrypted_secrets_without_clinic_id(): void

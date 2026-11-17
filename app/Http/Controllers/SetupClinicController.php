@@ -56,7 +56,7 @@ class SetupClinicController extends Controller
             $request->merge(['code' => 'KLN-0001']);
         }
 
-        return $request->validate([
+        $data = $request->validate([
             'code' => ['required', 'string', 'max:30'], 'name' => ['required', 'string', 'max:255'],
             'legal_name' => ['nullable', 'string', 'max:255'], 'phone' => ['nullable', 'string', 'max:30'],
             'email' => ['nullable', 'email', 'max:255'], 'address' => ['nullable', 'string'],
