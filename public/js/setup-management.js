@@ -58,3 +58,23 @@
     footer.innerHTML = '<p id="pcare-count" aria-live="polite"></p><div class="pcare-pagination"><select id="pcare-size" aria-label="Jumlah data per halaman"><option value="10">10 / halaman</option><option value="25">25 / halaman</option><option value="50">50 / halaman</option></select><button id="pcare-prev" aria-label="Halaman sebelumnya">&#8249;</button><span id="pcare-page-number">1</span><button id="pcare-next" aria-label="Halaman berikutnya">&#8250;</button></div>';
     card.append(footer);
 })();
+
+(() => {
+    document.querySelectorAll('[data-logo-input]').forEach(input => {
+        input.addEventListener('change', () => {
+            const file = input.files?.[0];
+            const container = input.parentElement.querySelector('[data-logo-preview]');
+            const image = container?.querySelector('[data-logo-image]');
+            const status = container?.querySelector('[data-logo-status]');
+            if (!file || !container || !image || !status) return;
+            if (!file.type.startsWith('image/')) {
+                input.value = '';
+                return;
+            }
+            image.src = URL.createObjectURL(file);
+            image.onload = () => URL.revokeObjectURL(image.src);
+            status.textContent = 'Pratinjau logo yang akan disimpan';
+            container.classList.remove('hidden');
+        });
+    });
+})();
