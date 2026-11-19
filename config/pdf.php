@@ -14,5 +14,9 @@ return [
             'paper' => 'a4',
             'orientation' => 'portrait',
         ],
+        'suratKeteranganSakit' => [
+            'paper' => 'a4',
+            'orientation' => 'portrait',
+        ],
     ],
 ];

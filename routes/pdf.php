@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\Pdf\Bpjs\SppFktpController;
 use App\Http\Controllers\Api\Pdf\Bpjs\RujukSubspesialisController;
 use App\Http\Controllers\Api\Pdf\HealthCertificateController;
+use App\Http\Controllers\Api\Pdf\SickCertificateController;
 use App\Http\Middleware\AuthenticatePdfIntegration;
 use Illuminate\Support\Facades\Route;
 
@@ -18,4 +19,6 @@ Route::prefix('bpjs')->name('bpjs.')->group(function () {
     Route::post('rujukSubspesialis', RujukSubspesialisController::class)->name('rujukSubspesialis.post');
     Route::get('suratKeteranganSehat', HealthCertificateController::class)->withoutMiddleware(AuthenticatePdfIntegration::class)->name('suratKeteranganSehat');
     Route::post('suratKeteranganSehat', HealthCertificateController::class)->name('suratKeteranganSehat.post');
+    Route::get('suratKeteranganSakit', SickCertificateController::class)->withoutMiddleware(AuthenticatePdfIntegration::class)->name('suratKeteranganSakit');
+    Route::post('suratKeteranganSakit', SickCertificateController::class)->name('suratKeteranganSakit.post');
 });
