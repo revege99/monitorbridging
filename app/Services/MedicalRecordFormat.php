@@ -123,9 +123,6 @@ class MedicalRecordFormat
         }
         $previous = $this->counter(true);
         $this->format($this->counterNumber($medicalRecord));
-        if ($this->counterNumber($medicalRecord) <= $this->counterNumber($previous)) {
-            throw new RuntimeException('Nomor RM terakhir sudah berubah. Periksa ulang peserta untuk memperoleh nomor terbaru.');
-        }
 
         return $previous;
     }
@@ -137,8 +134,10 @@ class MedicalRecordFormat
             throw new \LogicException('Pencatat RM hanya diperbarui sesudah pasien disimpan dalam transaksi yang sama.');
         }
         $number = $this->counterNumber($medicalRecord);
-        if ($number <= $this->counterNumber($previous)) {
-            throw new RuntimeException('Nomor pencatat RM tidak boleh mundur.');
+        // Nomor manual tetap boleh disimpan. Pencatat SIMRS hanya maju bila
+        // nomor yang disimpan tepat satu urutan setelah nilai pencatat saat dikunci.
+        if ($number !== $this->counterNumber($previous) + 1) {
+            return;
         }
         // Counter tetap numerik tanpa pemisah, sesuai pencatat urutan SIMRS.
         $counter = str_pad((string) $number, $this->configuration->rm_digits, '0', STR_PAD_LEFT);

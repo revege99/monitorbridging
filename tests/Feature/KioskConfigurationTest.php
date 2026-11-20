@@ -135,7 +135,7 @@ class KioskConfigurationTest extends TestCase
             DB::connection('clinic')->table('pasien')->insert(['no_rkm_medis' => '00025974']);
             $format->advanceAfterSave('00025974', $previous);
         });
-        $this->assertSame('00025974', DB::connection('clinic')->table('set_no_rkm_medis')->value('no_rkm_medis'));
+        $this->assertSame('00025970', DB::connection('clinic')->table('set_no_rkm_medis')->value('no_rkm_medis'));
         $this->assertSame('00025975', $format->next());
     }
 
@@ -156,18 +156,21 @@ class KioskConfigurationTest extends TestCase
         $this->assertSame('000000', DB::connection('clinic')->table('set_no_rkm_medis')->value('no_rkm_medis'));
     }
 
-    public function test_saved_counter_has_no_separator_and_stale_suggestion_is_rejected(): void
+    public function test_manual_number_outside_counter_sequence_is_saved_without_advancing_counter(): void
     {
         $format = new MedicalRecordFormat(KioskConfiguration::current());
+        DB::connection('clinic')->transaction(function () use ($format) {
+            $previous = $format->lockCounterForSave('00-00-99');
+            DB::connection('clinic')->table('pasien')->insert(['no_rkm_medis' => '00-00-99']);
+            $format->advanceAfterSave('00-00-99', $previous);
+        });
+        $this->assertSame('000000', DB::connection('clinic')->table('set_no_rkm_medis')->value('no_rkm_medis'));
         DB::connection('clinic')->transaction(function () use ($format) {
             $previous = $format->lockCounterForSave('00-00-01');
             DB::connection('clinic')->table('pasien')->insert(['no_rkm_medis' => '00-00-01']);
             $format->advanceAfterSave('00-00-01', $previous);
         });
         $this->assertSame('000001', DB::connection('clinic')->table('set_no_rkm_medis')->value('no_rkm_medis'));
-        $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('terakhir sudah berubah');
-        DB::connection('clinic')->transaction(fn () => $format->lockCounterForSave('00-00-01'));
     }
 
     public function test_sequence_overflow_is_rejected_instead_of_truncating_digits(): void
